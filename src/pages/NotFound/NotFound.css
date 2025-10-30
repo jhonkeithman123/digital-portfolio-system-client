@@ -1,0 +1,43 @@
+.containerN {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    background-color: #f0f4f8;
+}
+
+.notFound {
+    font-size: 3.5rem;
+    cursor: default;
+    color: #000000;
+    margin-bottom: 1rem;
+}
+
+.notFoundP {
+    font-size: 1.2rem;
+    color: #555;
+    margin-bottom: 2rem;
+    cursor: default;
+}
+
+.buttonN {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.4rem;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    min-width: 15svw;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin: 1rem;
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.3);
+}
+
+.buttonN:hover {
+    background-color: #0056b3;
+}

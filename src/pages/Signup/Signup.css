@@ -1,0 +1,126 @@
+.containerS {
+    display: flex;
+    flex: 1;
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+.backgroundS {
+    display: flex;
+    position: fixed;
+    padding: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("/public/classroom.jpg");
+    background-size: cover;
+    background-position: center;
+    filter: blur(8px);
+    z-index: -2;
+    border: 2px dashed red;
+}
+
+.overlayS {
+    display: flex;
+    position: absolute;
+    flex: 1;
+    top: 0;
+    left: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.3);
+    z-index: 0;
+}
+
+.password-wrapperS {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.backS {
+    position: absolute;
+    background: none;
+    background-color: rgba(0, 0, 0, 0);
+    border: none;
+    color: #007bff;
+    font-size: 2.5rem;
+    cursor: pointer;
+    z-index: 2;
+    margin: 1rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.backS:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.input-containerS {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background-color: rgba(189, 189, 189, 0.168);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin: 1.2rem;
+}
+
+.inputS {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    margin: 1rem;
+    font-size: 1rem;
+    width: 35svw;
+    height: 2.2svh;
+    border-radius: 5px;
+    cursor: text;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.toggle-iconS {
+    position: absolute;
+    right: 2.5svw;
+    top: 50%;
+    transform: translateY(-270%);
+    cursor: pointer;   
+}
+
+.button-containerS {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+.buttonS {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.7rem;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    min-width: 25svw;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.buttonS:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}

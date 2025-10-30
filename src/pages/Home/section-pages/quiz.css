@@ -1,0 +1,318 @@
+/* ensure the card fills the width so children can center within it */
+.quiz-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+    width: 100%;
+    /* prevent stray horizontal scroll on the whole card */
+    overflow-x: hidden;
+}
+
+/* hard-center the header and editor blocks, but let them stretch wider */
+.quiz-card > .quiz-header,
+.quiz-card > .qe-editor {
+  width: 100%;
+  max-width: clamp(1000px, 96vw, 1440px);  /* was 1100px */
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 16px;                      /* a bit more breathing room */
+  padding-right: 16px;
+  box-sizing: border-box;
+}
+
+/* make header wrap cleanly on small widths */
+.quiz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* two-column grid; stretch to the same max width as the header */
+.qe-pages {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(360px, 1fr));  /* wider cards */
+  gap: 20px;
+  align-items: start;
+  overflow-x: hidden;
+  overflow-y: visible;
+  width: 100%;
+  max-width: clamp(1000px, 96vw, 1440px);               /* match header */
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 16px 16px;
+  box-sizing: border-box;
+}
+
+.qe-editor {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* buttons */
+.quiz-button,
+.quiz-action-btn {
+  appearance: none;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #111827;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.quiz-action-btn.view {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+.qe-btn {
+  appearance: none;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #111827;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.qe-btn.small { padding: 2px 6px; font-size: 12px; }
+.qe-btn.ghost {
+  background: transparent;
+  border-style: dashed;
+}
+
+/* page cards: fluid width that wraps nicely */
+.page-card {
+  /* override flex sizing from earlier approach */
+  flex: initial;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  border-radius: 10px;
+  padding-block: 16px;
+  padding-inline: 12px;
+  background: #fff;
+  box-shadow: var(--shadow-md);
+  border-left: 6px solid var(--accent-color);
+  display: flex;
+  flex-direction: column;
+
+  /* cap tall cards; inner list scrolls */
+  max-height: min(78vh, 900px); 
+}
+
+/* small structure helpers so controls don’t overflow */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.page-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.page-controls {
+  display: flex;
+  gap: 6px;
+}
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  opacity: 0.6;
+}
+
+/* select */
+.qe-select {
+  padding: 8px;
+  border: 1px solid #e6e7eb;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+}
+
+/* question items */
+.question-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+/* gap between questions in the same card */
+.question-card {
+  background: #fafafa;
+  border: 1px solid #eef0f3;
+  border-radius: 8px;
+  padding: 10px;
+  box-sizing: border-box;
+  user-select: none;
+  transition: box-shadow 120ms ease;
+}
+.question-card + .question-card {
+  margin-top: 12px;          /* vertical gap between siblings */
+}
+.question-card.is-dragging {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+/* header row inside a question */
+.question-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* options block for MC/checkboxes */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.opt-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* inputs/buttons used in editor */
+.qe-input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #e6e7eb;
+  background: transparent;
+  box-sizing: border-box;
+  font-size: 14px;
+  color: #111827;
+}
+.qe-question-text { flex: 1; }
+
+.question-list {
+  flex: 1 1 auto;
+  min-height: 0;          /* needed so overflow can work in flex item */
+  overflow-y: auto;
+  padding-bottom: 8px;    /* small breathing room at the bottom */
+}
+
+/* title area */
+.quiz-title-wrap {
+  flex: 1 1 480px;
+  min-width: 260px;
+}
+.quiz-title-input {
+  width: 100%;
+  font-size: clamp(18px, 2.4vw, 28px);
+  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+/* Controls to the right of the title */
+.quiz-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.qc-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.qc-label {
+  font-size: 12px;
+  color: #6b7280;
+}
+.qc-number {
+  width: 90px;
+  padding-block: 6px;
+}
+.qc-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.qc-suffix {
+  font-size: 12px;
+  color: #6b7280;
+}
+.qc-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* correct answer + settings sections */
+.qa-section {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.qa-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+.qa-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qa-number {
+  width: 90px;
+}
+
+/* checkbox correct indicator */
+.opt-correct {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #374151;
+}
+
+/* make “✓” button show active state */
+.qe-btn.small.active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+/* responsive breakpoints */
+@media (max-width: 1200px) {
+  .qe-pages {
+    grid-template-columns: repeat(2, minmax(320px, 1fr)); /* keep 2 cols longer */
+    gap: 16px;
+  }
+}
+@media (max-width: 900px) {
+   .quiz-controls {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 10px 12px;
+  }
+  .qc-number { width: 80px; }
+
+  .qe-pages {
+    grid-template-columns: 1fr;   /* single column on small screens */
+    gap: 12px;
+    padding: 12px;
+    max-width: 100vw;             /* use full width on mobile */
+  }
+  .page-card {
+    max-height: none;             /* let content expand on mobile */
+  }
+  .quiz-card > .quiz-header,
+  .quiz-card > .qe-editor {
+    max-width: 100vw;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

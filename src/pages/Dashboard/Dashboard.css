@@ -1,0 +1,131 @@
+.notification-icon {
+  position: relative;
+  cursor: pointer;
+}
+
+.svg {
+    position: absolute;
+    background: none;
+    left: 0;
+    top: 12vh;
+    margin: 0.3rem;
+    color: var(--accent-color);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background-color: red;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(0,0,0,0.2);
+  z-index: 10;
+  animation: pulse 1.5s infinite;
+}
+
+.dashboard {
+    font-family: Arial, sans-serif;
+    background-color: #f0f4f8;
+    min-height: 100svh;
+    flex-direction: column;
+}
+
+.dashboard-header {
+    background-color: var(--accent-color);
+    color: white;
+    padding: 1rem 2rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-welcome {
+    padding: 0.9rem 1.8rem;
+    border-radius: 20px;
+    font-weight: bold;
+    text-transform: capitalize;
+    background-color: white;
+    color: var(--accent-color);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.role-badge.student {
+    color: #ffffff;
+    border-radius: 5px;
+    padding: 0.2rem 0.3rem;
+    cursor: default;
+}
+
+.role-badge.teacher {
+    color: #ffffff;
+    border-radius: 5px;
+    padding: 0.2rem 0.3rem;
+    cursor: default;
+}
+
+.dashboard-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+}
+
+.dashboard-card {
+    background-color: white;
+    border-left: 6px solid var(--accent-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 1.5rem;
+    width: 80%;
+    max-width: 60svh;
+    margin-bottom: 2rem;
+}
+
+.dashboard-card h2 {
+    margin-bottom: 1rem;
+    color: var(--accent-color);
+}
+
+.dashboard-footer  {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+    margin: 1rem;
+}
+
+.footer-button-container {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+    transform: translateX(50%);
+}
+
+.dashboard-button {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    transition: background-color 0.5s ease, transform 0.5s ease, box-shadow 0.5s ease;
+}
+
+.dashboard-button:hover {
+    background-color: #666;
+    transform: scale(1.10);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}

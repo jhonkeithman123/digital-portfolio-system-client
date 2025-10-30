@@ -1,0 +1,61 @@
+.notification-menu {
+    position: absolute;
+    top: 11vh;
+    left: 5vw;
+    width: 32vw;
+    max-height: 400px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    z-index: 1000;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.notification-menu h4 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.notification-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.notification-menu li {
+    padding: 0.75rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.notification-menu li.unread {
+    background-color: #f9f9f9;
+}
+
+.notification-menu li.read {
+    background-color: #fff;
+    opacity: 0.8;
+}
+
+.notification-menu a {
+    text-decoration: none;
+    color: #0077cc;
+    font-weight: 500;
+}
+
+.notification-menu span {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
