@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import useMessage from "../../../hooks/useMessage";
 import "./quiz.css";
+import TokenGuard from "../../../components/auth/tokenGuard";
 
 const API_BASE = process.env.REACT_APP_API_URL;
 
@@ -9,14 +11,34 @@ function uid(prefix = "") {
   return prefix + Math.random().toString(36).slice(2, 9);
 }
 
-export default function QuizEditor({ classroomCode }) {
+export default function QuizEditor({ classroomCode, initialData }) {
+  const navigate = useNavigate();
   const [title, setTitle] = useState("Untitled Quiz");
-  const [pages, setPages] = useState([{ id: uid("page-"), title: "Page 1", questions: [] }]);
+  const [draggingType, setDraggingType] = useState(null);
+  const [isTrashOver, setIsTrashOver] = useState(false);
+  const [pages, setPages] = useState(
+    initialData?.pages ?? [{ id: uid("page-"), title: "Page 1", questions: [] }]
+  );
   const { messageComponent, showMessage } = useMessage();
 
   // NEW: quiz settings
-  const [attemptsAllowed, setAttemptsAllowed] = useState(1);
-  const [timeLimitMinutes, setTimeLimitMinutes] = useState(""); // blank = no limit
+  const [attemptsAllowed, setAttemptsAllowed] = useState(initialData?.attemptsAllowed ?? 1);
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState(
+    initialData?.timeLimitSeconds ? String(Math.ceil(initialData.timeLimitSeconds / 60)) : ""
+  );
+
+  // If initialData arrives after mount, hydrate once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const [prefilled, setPrefilled] = useState(!!initialData);
+  useEffect(() => {
+    if (initialData && !prefilled) {
+      setTitle(initialData.title ?? "Untitled Quiz");
+      setAttemptsAllowed(initialData.attemptsAllowed ?? 1);
+      setTimeLimitMinutes(initialData.timeLimitSeconds ? String(Math.ceil(initialData.timeLimitSeconds / 60)) : "");
+      setPages(initialData.pages ?? [{ id: uid("page-"), title: "Page 1", questions: [] }]);
+      setPrefilled(true);
+    }
+  }, [initialData, prefilled]);
 
   function addPage() {
     setPages((p) => [...p, { id: uid("page-"), title: `Page ${p.length + 1}`, questions: [] }]);
@@ -49,11 +71,69 @@ export default function QuizEditor({ classroomCode }) {
     );
   }
 
+  // Map old option indices to new indices after reordering within a question
+  function reorderOptionWithCorrect(length, from, to, correct) {
+    // build mapping oldIndex -> newIndex
+    const map = new Map();
+    for (let i = 0; i < length; i++) map.set(i, i);
+    if (from < to) {
+      for (let i = from + 1; i <= to; i++) map.set(i, i - 1);
+      map.set(from, to);
+    } else if (from > to) {
+      for (let i = to; i < from; i++) map.set(i, i + 1);
+      map.set(from, to);
+    }
+    if (correct == null) return correct;
+
+    // handle MC (string index) or checkbox (array)
+    if (Array.isArray(correct)) {
+      return correct.map((i) => map.get(i)).sort((a, b) => a - b);
+    } else {
+      const c = parseInt(correct, 10);
+      if (Number.isNaN(c)) return correct;
+      return String(map.get(c));
+    }
+  }
+
+  // Determine what kind of thing is being dragged from its source list
+  function getDragKind(srcDroppableId) {
+    if (srcDroppableId === "pages") return "PAGE";
+    if (srcDroppableId.includes("__opts")) return "OPTION";
+    return "QUESTION";
+  }
+
+  function parseOptDroppableId(id) {
+    // format: pageId__questionId__opts
+    const [pageId, qId] = id.split("__");
+    return { pageId, qId };
+  }
+
   function onDragEnd(result) {
-    const { source, destination, type } = result;
+    const { source, destination } = result;
+    // Reset highlight immediately, but delay type reset so DnD can finish cleanly
+    setIsTrashOver(false);
+    requestAnimationFrame(() => setDraggingType(null));
     if (!destination) return;
 
-    if (type === "PAGE") {
+    const kind = getDragKind(source.droppableId);
+
+    // Delete if dropped on trash
+    if (destination.droppableId === "trash") {
+      if (kind === "PAGE") {
+        removePage(source.index);
+      } else if (kind === "QUESTION") {
+        const srcPageId = source.droppableId;
+        removeQuestion(srcPageId, source.index);
+      } else if (kind === "OPTION") {
+        const { pageId, qId } = parseOptDroppableId(source.droppableId);
+        removeOption(pageId, qId, source.index);
+      }
+      return;
+    }
+
+    // Handle moves per kind (ignore invalid destinations)
+    if (kind === "PAGE") {
+      if (destination.droppableId !== "pages") return;
       const next = Array.from(pages);
       const [moved] = next.splice(source.index, 1);
       next.splice(destination.index, 0, moved);
@@ -61,29 +141,117 @@ export default function QuizEditor({ classroomCode }) {
       return;
     }
 
-    const srcPageIdx = pages.findIndex((p) => p.id === source.droppableId);
-    const dstPageIdx = pages.findIndex((p) => p.id === destination.droppableId);
-    if (srcPageIdx < 0 || dstPageIdx < 0) return;
+    if (kind === "QUESTION") {
+      const srcPageIdx = pages.findIndex((p) => p.id === source.droppableId);
+      const dstPageIdx = pages.findIndex((p) => p.id === destination.droppableId);
+      if (srcPageIdx < 0 || dstPageIdx < 0) return;
 
-    const srcPage = { ...pages[srcPageIdx] };
-    const dstPage = srcPageIdx === dstPageIdx ? srcPage : { ...pages[dstPageIdx] };
+      const srcPage = { ...pages[srcPageIdx] };
+      const dstPage = srcPageIdx === dstPageIdx ? srcPage : { ...pages[dstPageIdx] };
 
-    const srcQs = Array.from(srcPage.questions);
-    const [movedQ] = srcQs.splice(source.index, 1);
+      const srcQs = Array.from(srcPage.questions);
+      const [movedQ] = srcQs.splice(source.index, 1);
 
-    if (srcPageIdx === dstPageIdx) {
-      srcQs.splice(destination.index, 0, movedQ);
-      const next = [...pages];
-      next[srcPageIdx] = { ...srcPage, questions: srcQs };
-      setPages(next);
-    } else {
-      const dstQs = Array.from(dstPage.questions);
-      dstQs.splice(destination.index, 0, movedQ);
-      const next = [...pages];
-      next[srcPageIdx] = { ...srcPage, questions: srcQs };
-      next[dstPageIdx] = { ...dstPage, questions: dstQs };
-      setPages(next);
+      if (srcPageIdx === dstPageIdx) {
+        srcQs.splice(destination.index, 0, movedQ);
+        const next = [...pages];
+        next[srcPageIdx] = { ...srcPage, questions: srcQs };
+        setPages(next);
+      } else {
+        const dstQs = Array.from(dstPage.questions);
+        dstQs.splice(destination.index, 0, movedQ);
+        const next = [...pages];
+        next[srcPageIdx] = { ...srcPage, questions: srcQs };
+        next[dstPageIdx] = { ...dstPage, questions: dstQs };
+        setPages(next);
+      }
+      return;
     }
+
+    if (kind === "OPTION") {
+      const srcInfo = parseOptDroppableId(source.droppableId);
+      const dstInfo = parseOptDroppableId(destination.droppableId);
+      if (srcInfo.pageId !== dstInfo.pageId || srcInfo.qId !== dstInfo.qId) return;
+
+      setPages((prev) =>
+        prev.map((pg) => {
+          if (pg.id !== srcInfo.pageId) return pg;
+          return {
+            ...pg,
+            questions: pg.questions.map((q) => {
+              if (q.id !== srcInfo.qId) return q;
+              const opts = Array.from(q.options || []);
+              const [moved] = opts.splice(source.index, 1);
+              opts.splice(destination.index, 0, moved);
+
+              const newCorrect = reorderOptionWithCorrect(
+                opts.length,
+                source.index,
+                destination.index,
+                q.correctAnswer
+              );
+              return { ...q, options: opts, correctAnswer: newCorrect };
+            }),
+          };
+        })
+      );
+      return;
+    }
+  }
+
+  // helper for live highlight while aiming the trash
+  function onDragUpdate(update) {
+    const dest = update?.destination;
+    setIsTrashOver(!!dest && dest.droppableId === "trash");
+  }
+
+  const onDragStart = (start) => {
+    setDraggingType(getDragKind(start.source.droppableId));
+  };
+
+  // Helpers to remove items
+  function removePage(pageIndex) {
+    setPages((p) => p.filter((_, i) => i !== pageIndex));
+  }
+  function removeQuestion(pageId, qIndex) {
+    setPages((p) =>
+      p.map((pg) =>
+        pg.id !== pageId ? pg : { ...pg, questions: pg.questions.filter((_, i) => i !== qIndex) }
+      )
+    );
+  }
+  function removeOption(pageId, qId, optIndex) {
+    setPages((p) =>
+      p.map((pg) => {
+        if (pg.id !== pageId) return pg;
+        return {
+          ...pg,
+          questions: pg.questions.map((q) => {
+            if (q.id !== qId || !Array.isArray(q.options)) return q;
+            const opts = [...q.options];
+            opts.splice(optIndex, 1);
+
+            const patch = { options: opts };
+            if (q.type === "multiple_choice") {
+              const cur = q.correctAnswer == null ? null : parseInt(q.correctAnswer, 10);
+              if (cur == null || Number.isNaN(cur)) {
+                // nothing
+              } else if (cur === optIndex) {
+                patch.correctAnswer = null;
+              } else if (cur > optIndex) {
+                patch.correctAnswer = String(cur - 1);
+              }
+            } else if (q.type === "checkboxes") {
+              const arr = Array.isArray(q.correctAnswer) ? q.correctAnswer : [];
+              patch.correctAnswer = arr
+                .filter((i) => i !== optIndex)
+                .map((i) => (i > optIndex ? i - 1 : i));
+            }
+            return { ...q, ...patch };
+          }),
+        };
+      })
+    );
   }
 
   async function saveQuiz() {
@@ -103,21 +271,42 @@ export default function QuizEditor({ classroomCode }) {
       timeLimitSeconds,
     };
 
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("authToken") ||
+      sessionStorage.getItem("token") ||
+      "";
+
+    if (!token) {
+      showMessage("You are not logged in", "error");
+      return;
+    }
+
+    // For now, create or save-as-new. If you add an update route, switch to PUT here.
+    const url = `${API_BASE}/quizes/${classroomCode}/quizzes/create`;
+
     try {
-      const resp = await fetch(`${API_BASE}/quizes/${classroomCode}/quizzes/create`, {
+      const resp = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
+      if (resp.status === 401 || resp.status === 403) {
+        showMessage("Session expired. Please sign in again.", "error");
+        navigate("/login");
+        return;
+      }
       const data = await resp.json();
-      showMessage(data.success ? "Quiz saved" : "Error saving quiz", data.success ? "success" : "error");
+      showMessage(data.success ? "Quiz saved" : (data.message || "Error saving quiz"), data.success ? "success" : "error");
     } catch (err) {
+      console.error("Error saving quiz", err);
       showMessage("Server error saving quiz", "error");
     }
   }
 
   return (
-    <>
+    <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in", "error")}>
+
       {messageComponent}
       <section className="quiz-card">
         <div className="quiz-header" style={{ alignItems: "center" }}>
@@ -136,6 +325,9 @@ export default function QuizEditor({ classroomCode }) {
           </div>
 
             <div className="quiz-controls">
+              <div className="qc-actions">
+                <button className="quiz-action-btn back" onClick={() => navigate("/home")}>← Back to Home</button>
+              </div>
               <label className="qc-field">
                 <span className="qc-label">Attempts</span>
                 <input
@@ -172,23 +364,57 @@ export default function QuizEditor({ classroomCode }) {
           </div>          
 
         <div className="qe-editor">
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="pages" type="PAGE" direction="horizontal">
+          <DragDropContext onDragEnd={onDragEnd} onDragUpdate={onDragUpdate} onDragStart={onDragStart}>
+            <div className={`trash-zone ${isTrashOver ? "over" : ""}`}>
+              {/* Single, always-mounted trash; accepts all items via type="ITEM" */}
+              <Droppable droppableId="trash" type="ITEM">
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`trash-drop visible ${snapshot.isDraggingOver ? "over" : ""}`}
+                  >
+                    <span className="trash-content">
+                      <span className="trash-icon" aria-hidden>🗑</span>
+                      <span className="trash-text">
+                        {snapshot.isDraggingOver ? "Release to delete" : "Drag here to delete"}
+                      </span>
+                    </span>
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </div>
+            {/* Make pages list also type="ITEM" so it can drop to the universal trash */}
+            <Droppable droppableId="pages" type="ITEM" direction="vertical">
               {(provided) => (
                 <div ref={provided.innerRef} {...provided.droppableProps} className="qe-pages">
                   {pages.map((pg, idx) => (
                     <Draggable draggableId={pg.id} index={idx} key={pg.id}>
                       {(dragProvided) => (
-                        <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} className="page-card" style={dragProvided.draggableProps.style}>
+                        <div
+                          ref={dragProvided.innerRef}
+                          {...dragProvided.draggableProps}
+                          className="page-card"
+                          style={dragProvided.draggableProps.style}
+                        >
                           <div className="page-header">
-                            <input className="qe-input page-title" value={pg.title} onChange={(e) => setPages(p => p.map(x => x.id === pg.id ? { ...x, title: e.target.value } : x))} />
+                            <input
+                              className="qe-input page-title"
+                              value={pg.title}
+                              onChange={(e) =>
+                                setPages((p) => p.map((x) => (x.id === pg.id ? { ...x, title: e.target.value } : x)))
+                              }
+                            />
                             <div className="page-controls">
                               <button className="qe-btn" onClick={() => addQuestion(pg.id)}>+Q</button>
                             </div>
-                            <div {...dragProvided.dragHandleProps} className="drag-handle" aria-hidden>☰</div>
+                            <div {...dragProvided.dragHandleProps} className="drag-handle" aria-hidden>
+                              ☰
+                            </div>
                           </div>
 
-                          <Droppable droppableId={pg.id} type="QUESTION" direction="vertical" ignoreContainerClipping={true}>
+                          <Droppable droppableId={pg.id} type="ITEM" direction="vertical" ignoreContainerClipping={true}>
                             {(qProvided) => (
                               <div ref={qProvided.innerRef} {...qProvided.droppableProps} className="question-list">
                                 {pg.questions.map((q, qidx) => (
@@ -197,8 +423,16 @@ export default function QuizEditor({ classroomCode }) {
                                       <div ref={qi.innerRef} {...qi.draggableProps} className="question-card" style={qi.draggableProps.style}>
                                         <div className="question-top">
                                           <div {...qi.dragHandleProps} className="drag-handle">☰</div>
-                                          <input className="qe-input qe-question-text" value={q.text} onChange={(e) => updateQuestion(pg.id, q.id, { text: e.target.value })} />
-                                          <select className="qe-select" value={q.type} onChange={(e) => updateQuestion(pg.id, q.id, { type: e.target.value })}>
+                                          <input
+                                            className="qe-input qe-question-text"
+                                            value={q.text}
+                                            onChange={(e) => updateQuestion(pg.id, q.id, { text: e.target.value })}
+                                          />
+                                          <select
+                                            className="qe-select"
+                                            value={q.type}
+                                            onChange={(e) => updateQuestion(pg.id, q.id, { type: e.target.value })}
+                                          >
                                             <option value="multiple_choice">Multiple choice</option>
                                             <option value="short_answer">Short answer</option>
                                             <option value="paragraph">Paragraph</option>
@@ -206,62 +440,96 @@ export default function QuizEditor({ classroomCode }) {
                                           </select>
                                         </div>
 
-                                        { (q.type === "multiple_choice" || q.type === "checkboxes") && (
+                                        {(q.type === "multiple_choice" || q.type === "checkboxes") && (
                                           <>
                                             <div className="qa-label">Options</div>
-                                              <div className="options">
-                                                {(q.options || []).map((opt, oi) => {
-                                                  const isCb = q.type === "checkboxes";
-                                                  const isCorrect =
-                                                    q.type === "multiple_choice"
-                                                      ? String(oi) === String(q.correctAnswer ?? "")
-                                                      : Array.isArray(q.correctAnswer) && q.correctAnswer.includes(oi);
-                                                  return (
-                                                    <div key={oi} className="opt-row">
-                                                      <input
-                                                        className="qe-input"
-                                                        value={opt}
-                                                        placeholder={`Option ${oi + 1}`}
-                                                        onChange={(e) => {
-                                                          const opts = [...(q.options || [])];
-                                                          opts[oi] = e.target.value;
-                                                          updateQuestion(pg.id, q.id, { options: opts });
-                                                        }}
-                                                      />
-                                                      {isCb ? (
-                                                        <label className="opt-correct">
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={isCorrect}
-                                                            onChange={() => {
-                                                              const arr = Array.isArray(q.correctAnswer) ? [...q.correctAnswer] : [];
-                                                              const idx = arr.indexOf(oi);
-                                                              if (idx >= 0) arr.splice(idx, 1);
-                                                              else arr.push(oi);
-                                                              updateQuestion(pg.id, q.id, { correctAnswer: arr });
-                                                            }}
-                                                          />
-                                                          Correct
-                                                        </label>
-                                                      ) : (
-                                                        <button
-                                                          className={`qe-btn small${isCorrect ? " active" : ""}`}
-                                                          title="Mark as correct"
-                                                          onClick={() => updateQuestion(pg.id, q.id, { correctAnswer: String(oi) })}
-                                                        >
-                                                          ✓
-                                                        </button>
-                                                      )}
-                                                    </div>
-                                                  );
-                                                })}
-                                                <button
-                                                  className="qe-btn ghost"
-                                                  onClick={() => updateQuestion(pg.id, q.id, { options: [...(q.options || []), ""] })}
+
+                                            <Droppable droppableId={`${pg.id}__${q.id}__opts`} type="ITEM" direction="vertical" ignoreContainerClipping={true}>
+                                              {(optsProvided) => (
+                                                <div
+                                                  ref={optsProvided.innerRef}
+                                                  {...optsProvided.droppableProps}
+                                                  className="options"
                                                 >
-                                                  + Option
-                                                </button>
-                                              </div>
+                                                  {(q.options || []).map((opt, oi) => {
+                                                    const isCb = q.type === "checkboxes";
+                                                    const isCorrect =
+                                                      q.type === "multiple_choice"
+                                                        ? String(oi) === String(q.correctAnswer ?? "")
+                                                        : Array.isArray(q.correctAnswer) && q.correctAnswer.includes(oi);
+
+                                                    return (
+                                                      <Draggable draggableId={`${q.id}-opt-${oi}`} index={oi} key={`${q.id}-opt-${oi}`}>
+                                                        {(od) => (
+                                                          <div
+                                                            ref={od.innerRef}
+                                                            {...od.draggableProps}
+                                                            className="opt-row"
+                                                            style={od.draggableProps.style}
+                                                          >
+                                                            <div {...od.dragHandleProps} className="drag-handle">☰</div>
+                                                            <input
+                                                              className="qe-input"
+                                                              value={opt}
+                                                              placeholder={`Option ${oi + 1}`}
+                                                              onChange={(e) => {
+                                                                const opts = [...(q.options || [])];
+                                                                opts[oi] = e.target.value;
+                                                                updateQuestion(pg.id, q.id, { options: opts });
+                                                              }}
+                                                            />
+                                                            {isCb ? (
+                                                              <label className="opt-correct">
+                                                                <input
+                                                                  type="checkbox"
+                                                                  checked={isCorrect}
+                                                                  onChange={() => {
+                                                                    const arr = Array.isArray(q.correctAnswer) ? [...q.correctAnswer] : [];
+                                                                    const idx = arr.indexOf(oi);
+                                                                    if (idx >= 0) arr.splice(idx, 1);
+                                                                    else arr.push(oi);
+                                                                    updateQuestion(pg.id, q.id, { correctAnswer: arr });
+                                                                  }}
+                                                                />
+                                                                Correct
+                                                              </label>
+                                                            ) : (
+                                                              <button
+                                                                className={`qe-btn small${isCorrect ? " active" : ""}`}
+                                                                title="Mark as correct"
+                                                                onClick={() =>
+                                                                  updateQuestion(pg.id, q.id, { correctAnswer: String(oi) })
+                                                                }
+                                                              >
+                                                                ✓
+                                                              </button>
+                                                            )}
+
+                                                            <button
+                                                              className="qe-btn small danger"
+                                                              aria-label="Remove option"
+                                                              onClick={() => removeOption(pg.id, q.id, oi)}
+                                                            >
+                                                              🗑
+                                                            </button>
+                                                          </div>
+                                                        )}
+                                                      </Draggable>
+                                                    );
+                                                  })}
+                                                  {optsProvided.placeholder}
+
+                                                  <button
+                                                    className="qe-btn ghost"
+                                                    onClick={() =>
+                                                      updateQuestion(pg.id, q.id, { options: [...(q.options || []), ""] })
+                                                    }
+                                                  >
+                                                    + Option
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </Droppable>
                                           </>
                                         )}
 
@@ -336,6 +604,6 @@ export default function QuizEditor({ classroomCode }) {
           </DragDropContext>
         </div>
       </section>
-    </>
+    </TokenGuard>
   );
 }

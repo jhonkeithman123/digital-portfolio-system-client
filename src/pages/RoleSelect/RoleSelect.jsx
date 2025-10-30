@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
+import { localStorageRemove, localStorageSet, localStorageGet } from "../../utils/modifyFromLocalStorage";
 import './RoleSelect.css';
 
 const reactAppUrl = process.env.REACT_APP_API_URL;
@@ -14,8 +15,8 @@ const RoleSelect = () => {
     };
 
     useEffect(() => {
-        localStorage.removeItem('role');
-        const token = localStorage.getItem('token');
+        localStorageRemove({ keys: ['role'] });
+        const token = localStorageGet({ keys: ['token'] })[0];
         if (!token) return;
 
         fetch(`${reactAppUrl}/auth/session`, {
@@ -24,15 +25,13 @@ const RoleSelect = () => {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-                localStorage.removeItem('role');
-                localStorage.setItem('role', data.user.role);
+                localStorageRemove({ keys: ['role'] });
+                localStorageSet({ keys: ['user', 'role'], values: [JSON.stringify(data.user), data.user.role] });
                 navigate('/dash');
             }
         })
         .catch(() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            localStorageRemove({ keys: ['token', 'user'] });
         });
     }, [navigate]);
 

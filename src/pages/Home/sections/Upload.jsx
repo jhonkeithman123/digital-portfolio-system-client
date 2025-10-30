@@ -1,3 +1,4 @@
+import TokenGuard from '../../../components/auth/tokenGuard';
 import { useState } from 'react';
 import '../Home.css';
 
@@ -51,65 +52,67 @@ const FileUpload = ({ role, file, onFileChange, onUpload, showMessage }) => {
     };
 
     return (
-        <section className="home-card">
-            <h2>{role === 'student' ? 'Submit Your Work' : 'Upload Activity'}</h2>
+        <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
+            <section className="home-card">
+                <h2>{role === 'student' ? 'Submit Your Work' : 'Upload Activity'}</h2>
 
-            <div
-                className={`upload-zone ${isDragging ? 'dragging' : ''}`}
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-            >
-                <div className="upload-icon">📄</div>
-                <p>Drag and drop your file here or</p>
-                <input 
-                    type="file"
-                    id='file-input'
-                    className='file-input-hidden'
-                    onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (validateFile(file)) {
-                            onFileChange(e);
-                        }
-                    }}
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                />
-                <label htmlFor="file-input" className='file-input-label'>
-                    Choose File
-                </label>
-                <p className="file-types">Allowed: PDF, DOC, DOCX, JPG, PNG (max 5MB)</p>
-            </div>
-
-            {file && (
-                <div className="file-preview">
-                    <div className="file-info">
-                        <span className="file-icon">📎</span>
-                        <div className="file-details">
-                            <p className="file-name">{file.name}</p>
-                            <p className="file-size">{(file.size / 1024).toFixed(2)} KB</p>
-                        </div>
-                    </div>
-                    <button 
-                        className="file-remove"
-                        onClick={() => {
-                            onFileChange({ target: { files: [] } });
-                            showMessage('File removed', 'info');
+                <div
+                    className={`upload-zone ${isDragging ? 'dragging' : ''}`}
+                    onDragEnter={handleDrag}
+                    onDragOver={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDrop={handleDrop}
+                >
+                    <div className="upload-icon">📄</div>
+                    <p>Drag and drop your file here or</p>
+                    <input 
+                        type="file"
+                        id='file-input'
+                        className='file-input-hidden'
+                        onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (validateFile(file)) {
+                                onFileChange(e);
+                            }
                         }}
-                    >
-                        ✕
-                    </button>
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    />
+                    <label htmlFor="file-input" className='file-input-label'>
+                        Choose File
+                    </label>
+                    <p className="file-types">Allowed: PDF, DOC, DOCX, JPG, PNG (max 5MB)</p>
                 </div>
-            )}
 
-            <button
-                className={`upload-button ${!file ? 'disabled' : ''}`}
-                onClick={(onUpload)}
-                disabled={!file}
-            >
-                {!file ? 'Upload File' : 'Select a file first'}
-            </button>
-        </section>
+                {file && (
+                    <div className="file-preview">
+                        <div className="file-info">
+                            <span className="file-icon">📎</span>
+                            <div className="file-details">
+                                <p className="file-name">{file.name}</p>
+                                <p className="file-size">{(file.size / 1024).toFixed(2)} KB</p>
+                            </div>
+                        </div>
+                        <button 
+                            className="file-remove"
+                            onClick={() => {
+                                onFileChange({ target: { files: [] } });
+                                showMessage('File removed', 'info');
+                            }}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
+
+                <button
+                    className={`upload-button ${!file ? 'disabled' : ''}`}
+                    onClick={(onUpload)}
+                    disabled={!file}
+                >
+                    {!file ? 'Upload File' : 'Select a file first'}
+                </button>
+            </section>
+        </TokenGuard>
     );
 };
 

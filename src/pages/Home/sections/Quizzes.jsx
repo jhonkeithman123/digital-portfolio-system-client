@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useMessage from "../../../hooks/useMessage";
+import TokenGuard from "../../../components/auth/tokenGuard";
 import "../Home.css";
 
 const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
@@ -137,7 +138,7 @@ const Quizzes = ({ role, classroomCode }) => {
   }
 
   return (
-    <>
+    <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
       {messageComponent}
 
       <section className="home-card zone-section">
@@ -266,7 +267,7 @@ const Quizzes = ({ role, classroomCode }) => {
           </div>
         )}
       </section>
-    </>
+    </TokenGuard>
   );
 };
 

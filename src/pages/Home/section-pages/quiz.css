@@ -52,6 +52,10 @@
 }
 
 /* buttons */
+.quiz-button:hover {
+  background: var(--accent-color);
+  color: #fff;
+}
 .quiz-button,
 .quiz-action-btn {
   appearance: none;
@@ -62,6 +66,7 @@
   border-radius: 6px;
   font-size: 14px;
   cursor: pointer;
+  transition: background .15s ease, color .15s ease;
 }
 .quiz-action-btn.view {
   background: #ef4444;
@@ -285,6 +290,93 @@
   color: #fff;
 }
 
+/* Trash drop-zone (top-left of editor) */
+.qe-editor { position: relative; }
+.trash-zone {
+  position: sticky;
+  top: 8px;
+  z-index: 40;
+  width: 100%;
+  height: 44px;
+  margin-bottom: 12px;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.trash-drop {
+  width: 100%;
+  height: 44px;
+  border: 2px dashed #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.trash-drop.visible { position: relative; }
+.trash-drop.hitbox {
+  position: absolute;        /* layered invisible droppables for other types */
+  inset: 0;
+  opacity: 0;
+}
+/* When the visible droppable itself is hovered by a matching type */
+.trash-drop.over {
+  background: #fff1f2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+/* highlight bar when any active trash is aimed */
+.trash-zone.over .trash-drop.visible,
+.trash-zone:has(.trash-drop.over) .trash-drop.visible {
+  background: #fff1f2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+/* show subtle active state when a drag is in progress (matching type) */
+.trash-drop.visible[data-active="true"] {
+  border-color: #fca5a5;
+  background: #fff7f7;
+}
+
+.trash-content { display: inline-flex; align-items: center; gap: 8px; }
+.trash-icon { font-size: 18px; }
+.trash-text { font-size: 13px; }
+
+/* option row now draggable and has remove button */
+.opt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qe-btn.small.danger {
+  color: #ef4444;
+  border-color: #fca5a5;
+  background: #fff;
+}
+.qe-btn.small.danger:hover {
+  background: #fff1f2;
+  border-color: #ef4444;
+}
+
+.quiz-action-btn.back {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+}
+.quiz-action-btn.back:hover {
+  background: var(--accent-color);
+  color: #fff;
+}
+
+/* ensure drag handle looks usable in options too */
+.opt-row .drag-handle {
+  cursor: grab;
+  user-select: none;
+  opacity: 0.6;
+}
+
 /* responsive breakpoints */
 @media (max-width: 1200px) {
   .qe-pages {
@@ -293,7 +385,10 @@
   }
 }
 @media (max-width: 900px) {
-   .quiz-controls {
+  .trash-zone { top: 6px; height: 40px; }
+  .trash-drop { height: 40px; }
+
+  .quiz-controls {
     width: 100%;
     justify-content: flex-start;
     gap: 10px 12px;

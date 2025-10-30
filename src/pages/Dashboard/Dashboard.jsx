@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import './Dashboard.css';
 import useTamperGuard from "../../security/useTamperGuard";
 import useMessage from "../../hooks/useMessage";
@@ -8,6 +8,7 @@ import BurgerMenu from "../../components/burger_menu";
 import StudentInvite from "../../components/StudentInvite";
 import NotificationMenu from "../../components/NotificationMenu";
 import InvNotificationMenu from "../classrooms/InvNotificationMenu";
+import TokenGuard from "../../components/auth/tokenGuard";
 
 const roleColors = {
     student: '#007bff',
@@ -18,6 +19,7 @@ const reactAppUrl = process.env.REACT_APP_API_URL;
 const Dashboard = () => {
     const navigate = useNavigate();
     const [logout, LogoutModal] = useLogout();
+    const didInit = useRef(false);
 
     const [user, setUser] = useState(null);
     const [hasActivity, setHasActivity] = useState(false);
@@ -33,19 +35,24 @@ const Dashboard = () => {
     useTamperGuard(user?.role, showMessage);
 
     useEffect(() => {
+        if (didInit.current) return;
+        didInit.current = true;
+        let timeoutId;
+
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
 
         if (!storedUser || !token) {
             showMessage("Missing session data", "error");
-            setTimeout(() => {
+            timeoutId = setTimeout(() => {
                 return navigate('/login', { replace: true });
-            }, 2000);
+            }, 1500);
+            return () => timeoutId && clearTimeout(timeoutId);
         }
 
         try {
             const parsedUser = JSON.parse(storedUser);
-            setUser(parsedUser);
+            setUser((u) => (u && u.id === parsedUser.id ? u : parsedUser));
             const accentColor = roleColors[parsedUser.role] || '#6c757d';
             document.documentElement.style.setProperty('--accent-color', accentColor);
         } catch {
@@ -70,7 +77,9 @@ const Dashboard = () => {
             localStorage.removeItem('user');
             navigate('/login', { replace: true });
         });
-    }, [navigate]);
+
+        return () => timeoutId && clearTimeout(timeoutId);
+    }, [navigate, showMessage]);
 
     useEffect(() => {
         if (user?.role === 'student') {
@@ -128,7 +137,7 @@ const Dashboard = () => {
                 setCheckingEnrollment(false);
             });
         }
-    }, [user, navigate]);
+    }, [user, navigate, showMessage]);
 
     useEffect(() => {
         const handlePopState = () => {
@@ -143,7 +152,7 @@ const Dashboard = () => {
 
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState)
-    }, [navigate]);
+    }, [navigate, showMessage]);
 
     useEffect(() => {
         if(user?.role === 'student') {
@@ -155,7 +164,7 @@ const Dashboard = () => {
     if (!user || checkingEnrollment) return null;
 
     return (
-        <>
+        <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
             {inviteOpen && (
                 <StudentInvite 
                     classroomCode={classroomInfo.code}
@@ -254,7 +263,7 @@ const Dashboard = () => {
                     <div>@ 2025 Digital Portfolio System</div>
                 </footer>
             </div>
-        </>
+        </TokenGuard>
     );
 };
 

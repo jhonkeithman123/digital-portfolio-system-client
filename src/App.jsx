@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound/NotFound.jsx";
 import JoinClassroom from "./pages/classrooms/JoinClassroom.jsx";
 import CreateClassroom from "./pages/classrooms/CreateClassroom.jsx";
 import QuizCreate from "./pages/Home/section-pages/QuizCreate.jsx";
+import QuizEditPage from "./pages/Home/section-pages/quiz-edit.jsx";
 
 
 const ProtectedRoute = ({ children, showMessage }) => {
@@ -79,12 +80,13 @@ function App() {
           <Route path="/" element={<RoleSelect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/home" element={<ProtectedRoute showMessage={showMessage}><Home /></ProtectedRoute>} />
           <Route path="/forgot" element={<ForgotPassword />} />
+          <Route path="/home" element={<ProtectedRoute showMessage={showMessage}><Home /></ProtectedRoute>} />
           <Route path="/dash" element={<ProtectedRoute showMessage={showMessage}><Dashboard /></ProtectedRoute>} />
           <Route path="/join" element={<ProtectedRoute showMessage={showMessage}><JoinClassroom /></ProtectedRoute>} />
           <Route path="/create" element={<ProtectedRoute showMessage={showMessage}><CreateClassroom /></ProtectedRoute>} />
           <Route path="/quizes/:code/create" element={<ProtectedRoute showMessage={showMessage}><QuizCreate /></ProtectedRoute>} />
+          <Route path="/quizes/:classCode/quizzes/:quizId/edit" element={<ProtectedRoute showMessage={showMessage}><QuizEditPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} /> 
         </Routes>
 

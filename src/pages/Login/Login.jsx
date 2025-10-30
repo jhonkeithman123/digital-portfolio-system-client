@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import useMessage from "../../hooks/useMessage";
 import Header from "../../components/Header";
+import { localStorageRemove, localStorageGet, localStorageSet } from "../../utils/modifyFromLocalStorage";
 import './Login.css';
 
 const Login = () => {
@@ -12,22 +13,21 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
 
     const { messageComponent, showMessage } = useMessage();
-    
-    const role = localStorage.getItem('role');
-    const validRoles = ['student', 'teacher'];
+
+    const role = localStorageGet({ keys: ['role'] })[0];
 
     const navigate = useNavigate();
 
+    const valid_roles = useMemo(() => ['student', 'teacher'], []);
     useEffect(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorageRemove({ keys: ['token', 'user', 'currentClassroom'] });
 
-        if (!role || !validRoles.includes(role)) {
+        if (!role || !valid_roles.includes(role)) {
             localStorage.clear();
             alert('Your role is not in the storage. Please choose again.');
             navigate('/');
         }
-    }, [role, navigate])
+    }, [role, navigate, valid_roles]);
 
     const handleSelect = ( page = 'login') => {
         navigate(`/${page}`);
@@ -66,8 +66,7 @@ const Login = () => {
             if (data.success) {
                 showMessage("Login successfull", "success");
                 setUser(data.user);
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorageSet({ keys: ['token', 'user', 'role'], values: [data.token, JSON.stringify(data.user), data.user.role] });
                 navigate(`/dash`);
             } else {
                 showMessage(data.error || "Login failed", 'error');

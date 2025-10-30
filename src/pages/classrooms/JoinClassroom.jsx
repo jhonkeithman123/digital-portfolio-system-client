@@ -7,6 +7,7 @@ import useLogout from "../../hooks/useLogout";
 import InvNotificationMenu from "./InvNotificationMenu";
 import './JoinClassroom.css';
 import './InviteBell.css';
+import TokenGuard from "../../components/auth/tokenGuard";
 
 const reactAppUrl = process.env.REACT_APP_API_URL;
 
@@ -41,7 +42,7 @@ const JoinClassroom = () => {
             console.log("[JoinClassroom] failed to fetch invites:", err);
             showMessage("Failed to fetch invites", "error")
         });
-    }, []);
+    }, [showMessage]);
 
     const handleJoin = (joinCode) => {
         const useCode = joinCode || code;
@@ -69,7 +70,7 @@ const JoinClassroom = () => {
     };
 
     return (
-        <>
+        <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
             {messageComponent}
 
             <div className="invite-bell-wrapper" ref={bellRef}>
@@ -128,7 +129,7 @@ const JoinClassroom = () => {
                     <button className="join-button" onClick={logout}>Logout</button>
                 </div>
             </div>
-        </>
+        </TokenGuard>
     )
 }
 

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import useMessage from "../../hooks/useMessage";
 import useLogout from "../../hooks/useLogout";
 import './CreateClassroom.css';
+import TokenGuard from "../../components/auth/tokenGuard";
 
 const CreateClassroom = () => {
     const navigate = useNavigate();
@@ -36,7 +37,7 @@ const CreateClassroom = () => {
     };
 
     return (
-        <>
+        <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
             {messageComponent}
 
             <div className="create-classroom-wrapper">
@@ -61,7 +62,7 @@ const CreateClassroom = () => {
                     <button className="create-button" onClick={logout}>Logout</button>
                 </div>
             </div>
-        </>
+        </TokenGuard>
     )
 };
 

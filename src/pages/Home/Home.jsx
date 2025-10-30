@@ -1,15 +1,17 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import useMessage from "../../hooks/useMessage";
 import Submissions from "./sections/Submissions";
 import Quizzes from "./sections/Quizzes";
 import FileUpload from "./sections/Upload";
 import './Home.css';
 import useLogout from "../../hooks/useLogout";
+import TokenGuard from "../../components/auth/tokenGuard";
 
 const Home = () => {
     const navigate = useNavigate();
     const [logout, LogoutModal] = useLogout();
+    const didInit = useRef(false);
 
     const [role, setRole] = useState('');
     const [user, setUser] = useState(null);
@@ -24,15 +26,19 @@ const Home = () => {
     const reactAppUrl = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (!token || !user.role) {
-            showMessage("Missing session data. Please log in again.", "error");
-            return navigate('/login')
-        }
-        setRole(user.role);
-        setUser(user);
-    }, [navigate]);
+    if (didInit.current) return;
+    didInit.current = true;
+
+    const token = localStorage.getItem('token');
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!token || !storedUser.role) {
+      showMessage("Missing session data. Please log in again.", "error");
+      navigate('/login', { replace: true });
+      return;
+    }
+    setRole((r) => (r === storedUser.role ? r : storedUser.role));
+    setUser((u) => (u && u.id === storedUser.id ? u : storedUser));
+  }, [navigate, showMessage]);
 
     useEffect(() => {
         const fetchSubmissions = async () => {
@@ -53,7 +59,7 @@ const Home = () => {
         if (user) {
             fetchSubmissions();
         }
-    }, [user]);
+    }, [user, reactAppUrl, showMessage]);
 
     const handleFileChange = (e) => {
         const selected = e.target.files[0];
@@ -86,21 +92,10 @@ const Home = () => {
         .catch(() => showMessage("Server error", "error"));
     };
 
-    const handleLogout = () => {
-        console.log("Log out button is clicked");
-        if (window.confirm("Do you want to logout?")) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            navigate('/', { replace: true });
-        } else {
-            console.log("User logout cancelled");
-        }
-    };
-
     if (!user) return null;
 
      return (
-        <>
+        <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
             {messageComponent}
             
             <div className="home-container">
@@ -172,7 +167,7 @@ const Home = () => {
                     <div>@ 2025 Digital Portfolio System</div>
                 </footer>
             </div>
-        </>
+        </TokenGuard>
     );
 };
 

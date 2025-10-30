@@ -1,3 +1,5 @@
+import useMessage from '../../../hooks/useMessage';
+import TokenGuard from '../../../components/auth/tokenGuard';
 import '../Home.css';
 
 const Submissions = ({ 
@@ -10,8 +12,11 @@ const Submissions = ({
     onFeedbackChange, 
     onSaveFeedback 
 }) => {
+    const { messageComponent, showMessage } = useMessage();
     return (
-        <section className="home-card">
+        <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
+            {messageComponent}
+            <section className="home-card">
             <h2>Submissions & Feedback</h2>
             {role === 'teacher' ? (
                 <>
@@ -111,6 +116,7 @@ const Submissions = ({
                 </div>
             )}
         </section>
+        </TokenGuard>
     );
 };
 
