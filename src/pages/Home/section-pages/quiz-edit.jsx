@@ -7,12 +7,12 @@ import TokenGuard from "../../../components/auth/tokenGuard";
 const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
 
 function toPagesFromServerQuestions(raw) {
-  // server may store either an array of questions or { pages: [...] }
-  // Normalize to [{ id, title, questions }]
-  try {
+   try {
     const q = typeof raw === "string" ? JSON.parse(raw) : raw;
-    if (q && Array.isArray(q.pages)) return q.pages;
-    if (Array.isArray(q)) return [{ id: "page-1", title: "Page 1", questions: q }];
+    if (q && Array.isArray(q.pages)) return q.pages;           // already paged
+    if (Array.isArray(q)) {                                     // legacy flat array
+      return [{ id: "page-1", title: "Page 1", questions: q }]; // single page fallback
+    }
   } catch {}
   return [{ id: "page-1", title: "Page 1", questions: [] }];
 }
@@ -41,11 +41,6 @@ export default function QuizEditPage() {
     let mounted = true;
     (async () => {
       try {
-        if (!classCode || !quizId) {
-          showMessage("Missing classroom or quiz id", "error");
-          navigate("/home");
-          return;
-        }
         const res = await fetch(`${API_BASE}/quizes/${classCode}/quizzes/${quizId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
@@ -61,14 +56,13 @@ export default function QuizEditPage() {
           navigate(`/quizes/${classCode}/quizzes`);
           return;
         }
-        const qz = data.quiz || data.data || {};
-        const pages = toPagesFromServerQuestions(qz.questions);
+        const qz = data.quiz;
         setInitialData({
+          quizId,
           title: qz.title || "Untitled Quiz",
           attemptsAllowed: qz.attempts_allowed ?? 1,
           timeLimitSeconds: qz.time_limit_seconds ?? null,
-          pages,
-          quizId,
+          pages: toPagesFromServerQuestions(qz.questions),
           mode: "edit",
         });
       } catch (e) {

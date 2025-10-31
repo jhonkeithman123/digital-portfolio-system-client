@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useMessage from "../../../hooks/useMessage";
 import TokenGuard from "../../../components/auth/tokenGuard";
+import useConfirm from '../../../hooks/useConfirm';
 import "../Home.css";
 
 const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
@@ -21,6 +22,7 @@ const Quizzes = ({ role, classroomCode }) => {
   // keep token in state so UI reacts if it changes
   const [token, setToken] = useState(() => readToken());
   const { messageComponent, showMessage } = useMessage();
+  const [confirm, ConfirmModal] = useConfirm();
   const navigate = useNavigate();
 
   // prefer explicit prop, then user object in localStorage, then a simple key
@@ -137,10 +139,40 @@ const Quizzes = ({ role, classroomCode }) => {
     else navigate(`/quizes/${classCode}/quizzes/${q.id}`);
   }
 
+  async function deleteQuiz(q) {
+    const t = readToken();
+    if (!t) return showMessage("You must be signed in to delete a quiz", "error");
+    
+    const ok = await confirm({
+      title: "Delete quiz",
+      message: `Delete "${q.title}"? This cannot be undone.`,
+      confirmText: "Delete",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/quizes/${classCode}/quizzes/${q.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setQuizzes((list) => list.filter((x) => x.id !== q.id));
+        showMessage("Quiz deleted", "success");
+      } else {
+        showMessage(data?.message || "Failed to delete quiz", "error");
+      }
+    } catch (e) {
+      console.error("Delete quiz failed", e);
+      showMessage("Server error", "error");
+    }
+  }
+
   return (
     <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
       {messageComponent}
-
+      <ConfirmModal />
       <section className="home-card zone-section">
         <div className="quiz-header">
           <h2>Quizzes</h2>
@@ -196,21 +228,7 @@ const Quizzes = ({ role, classroomCode }) => {
                   <div className="quiz-meta">
                     <span>
                       Questions:{" "}
-                      {(() => {
-                        try {
-                          const qs = JSON.parse(q.questions || "[]");
-                          return qs.pages
-                            ? qs.pages.reduce(
-                                (acc, p) => acc + (p.questions?.length || 0),
-                                0
-                              )
-                            : Array.isArray(qs)
-                            ? qs.length
-                            : 0;
-                        } catch {
-                          return "-";
-                        }
-                      })()}
+                      {typeof q.question_count === "number" ? q.question_count : "-"}
                     </span>
                     <span>
                       Duration:{" "}
@@ -248,6 +266,15 @@ const Quizzes = ({ role, classroomCode }) => {
                         }}
                       >
                         Attempts
+                      </button>
+                      <button
+                        className="quiz-action-btn danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteQuiz(q);
+                        }}
+                      >
+                        Delete
                       </button>
                     </>
                   ) : (

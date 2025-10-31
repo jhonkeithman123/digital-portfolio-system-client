@@ -1,44 +1,51 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import useMessage from "../../../hooks/useMessage";
 import "./quiz.css";
 import TokenGuard from "../../../components/auth/tokenGuard";
 
-const API_BASE = process.env.REACT_APP_API_URL;
+const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
 
-function uid(prefix = "") {
-  return prefix + Math.random().toString(36).slice(2, 9);
-}
+function uid(prefix = "") { return prefix + Math.random().toString(36).slice(2, 9); }
 
 export default function QuizEditor({ classroomCode, initialData }) {
   const navigate = useNavigate();
-  const [title, setTitle] = useState("Untitled Quiz");
-  const [draggingType, setDraggingType] = useState(null);
+  const { messageComponent, showMessage } = useMessage();
   const [isTrashOver, setIsTrashOver] = useState(false);
+  const [, setDraggingType] = useState(null);
+
+  // state
+  const [title, setTitle] = useState(initialData?.title ?? "Untitled Quiz");
   const [pages, setPages] = useState(
     initialData?.pages ?? [{ id: uid("page-"), title: "Page 1", questions: [] }]
   );
-  const { messageComponent, showMessage } = useMessage();
-
-  // NEW: quiz settings
   const [attemptsAllowed, setAttemptsAllowed] = useState(initialData?.attemptsAllowed ?? 1);
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(
     initialData?.timeLimitSeconds ? String(Math.ceil(initialData.timeLimitSeconds / 60)) : ""
   );
 
-  // If initialData arrives after mount, hydrate once
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const [prefilled, setPrefilled] = useState(!!initialData);
+  const hydrated = useRef(false);
+  const lastQuizId = useRef(initialData?.quizId ?? null);
+
   useEffect(() => {
-    if (initialData && !prefilled) {
-      setTitle(initialData.title ?? "Untitled Quiz");
-      setAttemptsAllowed(initialData.attemptsAllowed ?? 1);
-      setTimeLimitMinutes(initialData.timeLimitSeconds ? String(Math.ceil(initialData.timeLimitSeconds / 60)) : "");
-      setPages(initialData.pages ?? [{ id: uid("page-"), title: "Page 1", questions: [] }]);
-      setPrefilled(true);
+    // reset the hydration guard if we switched to a different quiz
+    if ((initialData?.quizId ?? null) !== lastQuizId.current) {
+      hydrated.current = false;
+      lastQuizId.current = initialData?.quizId ?? null;
     }
-  }, [initialData, prefilled]);
+
+    if (!initialData || hydrated.current) return;
+
+    setTitle(initialData.title ?? "Untitled Quiz");
+    setPages(initialData.pages ?? [{ id: uid("page-"), title: "Page 1", questions: [] }]);
+    setAttemptsAllowed(initialData.attemptsAllowed ?? 1);
+    setTimeLimitMinutes(
+      initialData.timeLimitSeconds ? String(Math.ceil(initialData.timeLimitSeconds / 60)) : ""
+    );
+
+    hydrated.current = true;
+  }, [initialData]);
 
   function addPage() {
     setPages((p) => [...p, { id: uid("page-"), title: `Page ${p.length + 1}`, questions: [] }]);
@@ -64,7 +71,6 @@ export default function QuizEditor({ classroomCode, initialData }) {
       )
     );
   }
-
   function updateQuestion(pageId, qId, patch) {
     setPages((p) =>
       p.map((pg) => (pg.id === pageId ? { ...pg, questions: pg.questions.map((q) => (q.id === qId ? { ...q, ...patch } : q)) } : pg))
@@ -101,13 +107,11 @@ export default function QuizEditor({ classroomCode, initialData }) {
     if (srcDroppableId.includes("__opts")) return "OPTION";
     return "QUESTION";
   }
-
   function parseOptDroppableId(id) {
     // format: pageId__questionId__opts
     const [pageId, qId] = id.split("__");
     return { pageId, qId };
   }
-
   function onDragEnd(result) {
     const { source, destination } = result;
     // Reset highlight immediately, but delay type reset so DnD can finish cleanly
@@ -198,13 +202,11 @@ export default function QuizEditor({ classroomCode, initialData }) {
       return;
     }
   }
-
   // helper for live highlight while aiming the trash
   function onDragUpdate(update) {
     const dest = update?.destination;
     setIsTrashOver(!!dest && dest.droppableId === "trash");
   }
-
   const onDragStart = (start) => {
     setDraggingType(getDragKind(start.source.droppableId));
   };
@@ -257,14 +259,13 @@ export default function QuizEditor({ classroomCode, initialData }) {
   async function saveQuiz() {
     if (!classroomCode) return showMessage("No classroom selected", "error");
 
-    // sanitize
     const attempts = Math.max(1, parseInt(attemptsAllowed || 1, 10));
     const mins = parseInt(timeLimitMinutes, 10);
     const timeLimitSeconds = Number.isFinite(mins) && mins > 0 ? mins * 60 : null;
 
     const payload = {
       title,
-      questions: { pages },
+      questions: { pages }, // preserve pages
       attemptsAllowed: attempts,
       startTime: null,
       endTime: null,
@@ -279,29 +280,76 @@ export default function QuizEditor({ classroomCode, initialData }) {
 
     if (!token) {
       showMessage("You are not logged in", "error");
+      navigate("/login");
       return;
     }
 
-    // For now, create or save-as-new. If you add an update route, switch to PUT here.
-    const url = `${API_BASE}/quizes/${classroomCode}/quizzes/create`;
+    const isEdit = !!initialData?.quizId;
+    const url = isEdit
+      ? `${API_BASE}/quizes/${classroomCode}/quizzes/${initialData.quizId}`
+      : `${API_BASE}/quizes/${classroomCode}/quizzes/create`;
+    const method = isEdit ? "PUT" : "POST";
 
     try {
       const resp = await fetch(url, {
-        method: "POST",
+        method,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
-      if (resp.status === 401 || resp.status === 403) {
-        showMessage("Session expired. Please sign in again.", "error");
-        navigate("/login");
+      const data = await resp.json();
+      if (!data.success) {
+        showMessage(data.message || "Save failed", "error");
         return;
       }
-      const data = await resp.json();
-      showMessage(data.success ? "Quiz saved" : (data.message || "Error saving quiz"), data.success ? "success" : "error");
+      showMessage(isEdit ? "Quiz updated" : "Quiz created", "success");
+      // optionally go back to list
+      // navigate(`/quizes/${classroomCode}/quizzes`);
     } catch (err) {
       console.error("Error saving quiz", err);
       showMessage("Server error saving quiz", "error");
     }
+  }
+
+  function changeQuestionType(pageId, qId, nextType) {
+    setPages((prev) =>
+      prev.map((pg) => {
+        if (pg.id !== pageId) return pg;
+        return {
+          ...pg,
+          questions: pg.questions.map((q) => {
+            if (q.id !== qId) return q;
+
+            const text = (q.text ?? "").toString();
+
+            if (nextType === "multiple_choice") {
+              const opts = Array.isArray(q.options) && q.options.length ? q.options.map(String) : ["", "", "", ""];
+              const idx = q.type === "multiple_choice" ? q.correctAnswer : null;
+              const correct =
+                idx != null && !Number.isNaN(parseInt(idx, 10)) && parseInt(idx, 10) < opts.length
+                  ? String(parseInt(idx, 10))
+                  : null;
+              return { id: q.id, type: "multiple_choice", text, options: opts, correctAnswer: correct };
+            } else if (nextType === "checkboxes") {
+              const opts = Array.isArray(q.options) && q.options.length ? q.options.map(String) : ["", "", "", ""];
+              const arr = Array.isArray(q.correctAnswer) ? q.correctAnswer : [];
+              const clean = Array.from(new Set(arr.filter((i) => Number.isInteger(i) && i >= 0 && i < opts.length))).sort(
+                (a, b) => a - b
+              );
+              return { id: q.id, type: "checkboxes", text, options: opts, correctAnswer: clean };
+            } else if (nextType === "short_answer") {
+              // Force default 1 and clamp later via input handler
+              return { id: q.id, type: "short_answer", text, sentenceLimit: 1, correctAnswer: String(q.correctAnswer ?? "") };
+            } else if (nextType === "paragraph") {
+              const n = parseInt(q.sentenceLimit, 10);
+              const sentenceLimit = Number.isFinite(n) ? Math.max(3, n) : 3;
+              return { id: q.id, type: "paragraph", text, sentenceLimit, correctAnswer: String(q.correctAnswer ?? "") };
+            }
+            // If an unexpected value sneaks in, keep current question unchanged.
+            return q;
+          }),
+        };
+      })
+    );
   }
 
   return (
@@ -431,7 +479,7 @@ export default function QuizEditor({ classroomCode, initialData }) {
                                           <select
                                             className="qe-select"
                                             value={q.type}
-                                            onChange={(e) => updateQuestion(pg.id, q.id, { type: e.target.value })}
+                                            onChange={(e) => changeQuestionType(pg.id, q.id, e.target.value)}
                                           >
                                             <option value="multiple_choice">Multiple choice</option>
                                             <option value="short_answer">Short answer</option>
@@ -549,9 +597,22 @@ export default function QuizEditor({ classroomCode, initialData }) {
                                                 min={1}
                                                 max={3}
                                                 className="qe-input qa-number"
-                                                value={q.sentenceLimit ?? 1}
+                                                // allow free typing; keep empty string if user clears
+                                                value={
+                                                  q.sentenceLimit === "" || q.sentenceLimit == null
+                                                    ? ""
+                                                    : String(q.sentenceLimit)
+                                                }
                                                 onChange={(e) => {
-                                                  const v = Math.max(1, Math.min(3, parseInt(e.target.value || "1", 10)));
+                                                  // store raw string, don't clamp per key
+                                                  updateQuestion(pg.id, q.id, {
+                                                    sentenceLimit: e.target.value,
+                                                  });
+                                                }}
+                                                onBlur={(e) => {
+                                                  // clamp on commit (blur)
+                                                  const n = parseInt(e.target.value, 10);
+                                                  const v = Number.isFinite(n) ? Math.min(3, Math.max(1, n)) : 1;
                                                   updateQuestion(pg.id, q.id, { sentenceLimit: v });
                                                 }}
                                               />
@@ -575,9 +636,16 @@ export default function QuizEditor({ classroomCode, initialData }) {
                                                 type="number"
                                                 min={3}
                                                 className="qe-input qa-number"
-                                                value={q.sentenceLimit ?? 3}
+                                                value={
+                                                  q.sentenceLimit === "" || q.sentenceLimit == null
+                                                    ? ""
+                                                    : String(q.sentenceLimit)
+                                                }
                                                 onChange={(e) => {
-                                                  const n = parseInt(e.target.value || "3", 10);
+                                                  updateQuestion(pg.id, q.id, { sentenceLimit: e.target.value });
+                                                }}
+                                                onBlur={(e) => {
+                                                  const n = parseInt(e.target.value, 10);
                                                   const v = Number.isFinite(n) ? Math.max(3, n) : 3;
                                                   updateQuestion(pg.id, q.id, { sentenceLimit: v });
                                                 }}

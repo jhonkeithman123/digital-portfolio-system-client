@@ -3,7 +3,7 @@
     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.2);
-    --transition-standard: all 0.3s ease;
+    --transition-standard: all 0.5s ease;
 }
 
 /** Layout Components */
@@ -333,6 +333,17 @@
 
 .quiz-action-btn.view:hover {
     background-color: #0056b3;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.quiz-action-btn.danger {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.quiz-action-btn.danger:hover {
+    background-color: #f10a0a;
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
 }

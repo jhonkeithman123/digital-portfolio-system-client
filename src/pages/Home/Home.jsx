@@ -18,7 +18,7 @@ const Home = () => {
     const [file, setFile] = useState(null);
     const [feedback, setFeedback] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [submissions, setSubmissions] = useState([]);
+    const [submissions, ] = useState([]);
     const [selectedSubmission, setSelectedSubmission] = useState(null);
 
     const { messageComponent, showMessage } = useMessage();
@@ -40,26 +40,27 @@ const Home = () => {
     setUser((u) => (u && u.id === storedUser.id ? u : storedUser));
   }, [navigate, showMessage]);
 
-    useEffect(() => {
-        const fetchSubmissions = async () => {
-            const token = localStorage.getItem('token');
-            try {
-                const response = await fetch(`${reactAppUrl}/submissions`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const data = await response.json();
-                if (data.success) {
-                    setSubmissions(data.submissions);
-                }
-            } catch (error) {
-                showMessage("Failed to fetch submissions", "error");
-            }
-        };
+    //* Will be enabled later
+    // useEffect(() => {
+    //     const fetchSubmissions = async () => {
+    //         const token = localStorage.getItem('token');
+    //         try {
+    //             const response = await fetch(`${reactAppUrl}/submissions`, {
+    //                 headers: { Authorization: `Bearer ${token}` }
+    //             });
+    //             const data = await response.json();
+    //             if (data.success) {
+    //                 setSubmissions(data.submissions);
+    //             }
+    //         } catch (error) {
+    //             showMessage("Failed to fetch submissions", "error");
+    //         }
+    //     };
 
-        if (user) {
-            fetchSubmissions();
-        }
-    }, [user, reactAppUrl, showMessage]);
+    //     if (user) {
+    //         fetchSubmissions();
+    //     }
+    // }, [user, reactAppUrl, showMessage]);
 
     const handleFileChange = (e) => {
         const selected = e.target.files[0];
