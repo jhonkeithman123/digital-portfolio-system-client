@@ -19,12 +19,18 @@ const reactAppUrl = process.env.REACT_APP_API_URL;
 const Dashboard = () => {
     const navigate = useNavigate();
     const [logout, LogoutModal] = useLogout();
+
+    // For safegurading the useEffects to prevent infinite loops
     const didInit = useRef(false);
+    const enrollmentChecked = useRef(false);
+    const quizzesLoadChecked = useRef(false);
 
     const [user, setUser] = useState(null);
     const [hasActivity, setHasActivity] = useState(false);
     const [checkingEnrollment, setCheckingEnrollment] = useState(true);
     const [classroomInfo, setClassroomInfo] = useState(null);
+    const [studentQuizzes, setStudentQuizzes] = useState([]);
+    const [loadingQuizzes, setLoadingQuizzes] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -81,9 +87,52 @@ const Dashboard = () => {
         return () => timeoutId && clearTimeout(timeoutId);
     }, [navigate, showMessage]);
 
+    // fetch quizzes for a student's classroom once we know the classroom code
+    useEffect(() => {
+        if (user?.role !== 'student' || !classroomInfo?.code) return;
+        let cancelled = false;
+
+        if (quizzesLoadChecked.current) return;
+        quizzesLoadChecked.current = true;
+
+        const token = localStorage.getItem('token');
+        setLoadingQuizzes(true);
+        fetch(`${reactAppUrl}/quizes/${classroomInfo.code}/quizzes`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        .then((res) => res.json())
+        .then((data) => {
+            if (cancelled) return;
+            if (data?.success && Array.isArray(data.quizzes)) {
+                setStudentQuizzes(data.quizzes);
+            } else {
+                console.warn('Failed to load quizzes for classroom', data);
+            }
+        })
+        .catch((err) => {
+            if (!cancelled) console.error('Error loading quizzes:', err);
+        })
+        .finally(() => {
+            if (!cancelled) setLoadingQuizzes(false);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [user, classroomInfo]);
+    
+    function openQuiz(q) {
+        if (!classroomInfo?.code) return;
+        navigate(`/quizes/${classroomInfo.code}/quizzes/${q.id}`);
+    }
+
     useEffect(() => {
         if (user?.role === 'student') {
+            if (enrollmentChecked.current) return;
+            enrollmentChecked.current = true;
+
             const token = localStorage.getItem('token');
+            console.log('Students enrollment check: sending request', { studentId: user?.id, tokenPresent: !!token });
 
             fetch(`${reactAppUrl}/classrooms/student`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -220,17 +269,27 @@ const Dashboard = () => {
                         )}
                     </section>
 
-                    <section className="dashboard-card">
-                        <h2>Quizes Scores</h2>
-                        {user.role === 'teacher' ? (
-                            <>
-                                <p>You haven't uploaded any quizzes yet. Go to the upload page to post one.</p>
-                                <button className="dashboard-button" onClick={() => navigate("/home")} >Upload a Quiz</button>
-                            </>
-                        ) : (
-                            <p>No Quizes yet. Wait for your teacher to post one.</p>
-                        )}
-                    </section>
+                    {user?.role === 'student' && (
+                        <section className="dashboard-card">
+                            <h2>Available Quizzes</h2>
+                            {loadingQuizzes ? (
+                                <p>Loading quizzes…</p>
+                            ) : studentQuizzes.length ? (
+                                <ul>
+                                    {studentQuizzes.map((q) => (
+                                        <li key={q.id} style={{ marginBottom: 8 }}>
+                                            <strong>{q.title}</strong>{" "}
+                                            <button className="dashboard-button" style={{ marginLeft: 8 }} onClick={() => openQuiz(q)}>
+                                                Start
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p>No quizzes available yet.</p>
+                            )}
+                        </section>
+                    )}
 
                     <section className="dashboard-card">
                         <h2>Feedback Summary</h2>
@@ -258,7 +317,7 @@ const Dashboard = () => {
                             )}
 
                             <LogoutModal />
-                            <button className="dashboard-button" onClick={logout}>Logout</button>
+                            <button className="dashboard-button" onClick={() => logout()}>Logout</button>
                         </div>
                     <div>@ 2025 Digital Portfolio System</div>
                 </footer>

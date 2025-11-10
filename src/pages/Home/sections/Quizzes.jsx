@@ -227,14 +227,24 @@ const Quizzes = ({ role, classroomCode }) => {
                   <p className="quiz-description">{q.description || ""}</p>
                   <div className="quiz-meta">
                     <span>
-                      Questions:{" "}
-                      {typeof q.question_count === "number" ? q.question_count : "-"}
+                      Items:{" "}
+                      {typeof q.questions_count === "number"
+                        ? q.questions_count
+                        : typeof q.question_count === "number"
+                        ? q.question_count
+                        : "-"}
                     </span>
                     <span>
-                      Duration:{" "}
+                      Time:{" "}
                       {q.time_limit_seconds
-                        ? `${Math.ceil(q.time_limit_seconds / 60)} mins`
+                        ? `${Math.ceil(q.time_limit_seconds / 60)} min`
                         : "—"}
+                    </span>
+                    <span>
+                      Attempts:{" "}
+                      {typeof q.attempts_allowed === "number"
+                        ? q.attempts_allowed
+                        : q.attemptsAllowed ?? "—"}
                     </span>
                     <span>
                       Start:{" "}

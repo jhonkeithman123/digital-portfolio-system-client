@@ -12,6 +12,7 @@ import JoinClassroom from "./pages/classrooms/JoinClassroom.jsx";
 import CreateClassroom from "./pages/classrooms/CreateClassroom.jsx";
 import QuizCreate from "./pages/Home/section-pages/QuizCreate.jsx";
 import QuizEditPage from "./pages/Home/section-pages/quiz-edit.jsx";
+import QuizTakePage from "./pages/Home/section-pages/quiz-take.jsx";
 
 
 const ProtectedRoute = ({ children, showMessage }) => {
@@ -87,6 +88,7 @@ function App() {
           <Route path="/create" element={<ProtectedRoute showMessage={showMessage}><CreateClassroom /></ProtectedRoute>} />
           <Route path="/quizes/:code/create" element={<ProtectedRoute showMessage={showMessage}><QuizCreate /></ProtectedRoute>} />
           <Route path="/quizes/:classCode/quizzes/:quizId/edit" element={<ProtectedRoute showMessage={showMessage}><QuizEditPage /></ProtectedRoute>} />
+          <Route path="/quizes/:classCode/quizzes/:quizId" element={<QuizTakePage />} />
           <Route path="*" element={<NotFound />} /> 
         </Routes>
 
