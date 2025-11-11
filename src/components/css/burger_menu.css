@@ -2,9 +2,10 @@
   position: absolute;
   top: 11rem;
   right: 1rem;
-  z-index: 10;
+  z-index: 1000;
 }
 
+/* Toggle */
 .burger-toggle {
   position: relative;
   width: 30px;
@@ -12,7 +13,11 @@
   background: none;
   border: none;
   cursor: pointer;
-  z-index: 11;
+  z-index: 1002;
+  transition: transform 0.3s ease;
+}
+.burger-toggle.open {
+  transform: rotate(90deg);
 }
 
 .line {
@@ -25,56 +30,142 @@
   border-radius: 2px;
   border: none;
 }
-
 .line.top {
   top: 0;
 }
-
 .line.middle {
   top: 10px;
 }
-
 .line.bottom {
   top: 20px;
 }
 
 .burger-toggle.open .line.top {
-  transform: rotate(45deg) translateY(8px) translateX(3px)
+  transform: rotate(45deg) translateY(8px) translateX(3px);
 }
-
 .burger-toggle.open .line.middle {
   opacity: 0;
 }
-
 .burger-toggle.open .line.bottom {
   transform: rotate(-45deg) translateY(-10px) translateX(5px);
 }
 
+/* Overlay (blurs page) */
+.burger-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  z-index: 1001;
+}
+
+/* Dropdown: Aero glass */
 .burger-dropdown {
   position: absolute;
   top: 2.5rem;
-  right: 1rem;
-  background: white;
-  border: 1px solid #ccc;
-  padding: 2rem;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  right: 0; /* anchor to the right side under the button */
+  width: min(340px, 92vw);
+  padding: 18px 18px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  outline: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  color: #0f172a;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  overflow: visible;
   pointer-events: none;
-}
 
+  /* entrance animation (when .open is added) */
+  opacity: 0;
+  transform: translateY(-8px) scale(0.985);
+  will-change: opacity, transform, box-shadow;
+  transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  z-index: 1003;
+}
 .burger-dropdown.open {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
   pointer-events: auto;
 }
 
-.burger-toggle {
-  transition: transform 0.3s ease;
+/* Glass sheen */
+.burger-dropdown::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(255, 255, 255, 0.28) 40%,
+    rgba(255, 255, 255, 0.1) 60%,
+    rgba(255, 255, 255, 0.38) 100%
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.7;
 }
 
-.burger-toggle.open {
-  transform: rotate(90deg);
+/* Arrow on the right edge */
+.burger-dropdown::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
+  transform: rotate(45deg);
+  background: rgba(255, 255, 255, 0.6);
+  border-left: 1px solid rgba(255, 255, 255, 0.55);
+  border-top: 1px solid rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.burger-dropdown.open::after {
+  opacity: 1;
+  transform: translateY(0) rotate(45deg);
+}
+
+/* Content styling inside dropdown */
+.burger-dropdown h3 {
+  margin: 0 0 8px;
+  font: 600 16px/1.2 system-ui, "Segoe UI", Arial, sans-serif;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.burger-dropdown p {
+  margin: 6px 0;
+  color: #334155;
+}
+.burger-dropdown button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: linear-gradient(180deg, #ffffffcc, #ffffff99);
+  color: #0f172a;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  transition: background 0.15s, transform 0.12s;
+}
+.burger-dropdown button:hover {
+  background: linear-gradient(180deg, #ffffffee, #ffffffb0);
+}
+.burger-dropdown button:active {
+  transform: translateY(1px);
+}
+
+/* Responsive nits */
+@media (max-width: 520px) {
+  .burger-dropdown {
+    width: min(300px, 92vw);
+  }
 }

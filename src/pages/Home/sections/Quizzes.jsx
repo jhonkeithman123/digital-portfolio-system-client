@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useMessage from "../../../hooks/useMessage";
 import TokenGuard from "../../../components/auth/tokenGuard";
-import useConfirm from '../../../hooks/useConfirm';
+import useConfirm from "../../../hooks/useConfirm";
 import "../Home.css";
 
 const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
@@ -141,8 +141,9 @@ const Quizzes = ({ role, classroomCode }) => {
 
   async function deleteQuiz(q) {
     const t = readToken();
-    if (!t) return showMessage("You must be signed in to delete a quiz", "error");
-    
+    if (!t)
+      return showMessage("You must be signed in to delete a quiz", "error");
+
     const ok = await confirm({
       title: "Delete quiz",
       message: `Delete "${q.title}"? This cannot be undone.`,
@@ -152,10 +153,13 @@ const Quizzes = ({ role, classroomCode }) => {
     if (!ok) return;
 
     try {
-      const res = await fetch(`${API_BASE}/quizes/${classCode}/quizzes/${q.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${t}` },
-      });
+      const res = await fetch(
+        `${API_BASE}/quizes/${classCode}/quizzes/${q.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${t}` },
+        }
+      );
       const data = await res.json();
       if (data?.success) {
         setQuizzes((list) => list.filter((x) => x.id !== q.id));
@@ -170,7 +174,12 @@ const Quizzes = ({ role, classroomCode }) => {
   }
 
   return (
-    <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
+    <TokenGuard
+      redirectTo="/login"
+      onExpire={() =>
+        showMessage("Session expired. Please sign in again.", "error")
+      }
+    >
       {messageComponent}
       <ConfirmModal />
       <section className="home-card zone-section">
@@ -296,6 +305,25 @@ const Quizzes = ({ role, classroomCode }) => {
                       }}
                     >
                       Start
+                    </button>
+                  )}
+                  {/* show Review button for teachers */}
+                  {role === "teacher" && (
+                    <button
+                      className="dashboard-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("[ReviewAttempts] navigating with", {
+                          classCode,
+                          quizId: q.id,
+                        });
+                        navigate(`/quizes/${classCode}/quizzes/${q.id}/review`);
+                      }}
+                      disabled={!classCode}
+                      title={!classCode ? "Resolving classroom…" : ""}
+                      style={{ marginLeft: 8 }}
+                    >
+                      Review attempts
                     </button>
                   )}
                 </div>
