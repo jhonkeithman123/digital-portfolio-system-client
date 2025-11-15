@@ -1,47 +1,45 @@
 import { useEffect, useRef, useState } from "react";
-import { getStoredToken, isTokenExpired, msUntilExpiry, parseJwt } from "../utils/jwt";
+import { apiFetch } from "../utils/apiClient.js";
 
 export default function useTokenStatus() {
-  const [token, setToken] = useState(() => getStoredToken());
-  const [payload, setPayload] = useState(() => parseJwt(token));
-  const [expired, setExpired] = useState(() => isTokenExpired(token));
-  const [remainingMs, setRemainingMs] = useState(() => msUntilExpiry(token));
+  const [expired, setExpired] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [remainingMs, setRemainingMs] = useState(null);
   const timerRef = useRef(null);
 
-  const schedule = (t) => {
+  const schedule = (ms) => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    const wait = Math.min(Math.max(t, 0), 24 * 60 * 60 * 1000);
+    const wait = Math.min(
+      Math.max(ms ?? 5 * 60 * 1000, 5000),
+      24 * 60 * 60 * 1000
+    );
     timerRef.current = setTimeout(() => {
-      const tk = getStoredToken();
-      setToken(tk);
-      setPayload(parseJwt(tk));
-      setExpired(isTokenExpired(tk));
-      setRemainingMs(msUntilExpiry(tk));
-    }, wait + 250);
+      checkNow();
+    }, wait);
   };
 
-  const refresh = () => {
-    const tk = getStoredToken();
-    setToken(tk);
-    setPayload(parseJwt(tk));
-    setExpired(isTokenExpired(tk));
-    const ms = msUntilExpiry(tk);
-    setRemainingMs(ms);
-    schedule(ms);
+  const checkNow = async () => {
+    const { unauthorized, data } = await apiFetch("/auth/session");
+    if (unauthorized || data?.success === false) {
+      setExpired(true);
+      setReady(true);
+      setRemainingMs(0);
+      return;
+    }
+    setExpired(false);
+    setReady(true);
+    const next =
+      typeof data?.expiresInMs === "number" ? data.expiresInMs : 5 * 60 * 1000;
+    setRemainingMs(next);
+    schedule(next);
   };
 
   useEffect(() => {
-    refresh();
-    const onStorage = (e) => {
-      if (e.key === "token" || e.key === "authToken") refresh();
-    };
-    window.addEventListener("storage", onStorage);
+    checkNow();
     return () => {
-      window.removeEventListener("storage", onStorage);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { token, payload, expired, remainingMs, refresh };
+  return { expired, ready, remainingMs, refresh: checkNow };
 }

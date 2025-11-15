@@ -1,26 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../../../utils/apiClient.js";
 import useMessage from "../../../hooks/useMessage";
 import TokenGuard from "../../../components/auth/tokenGuard";
 import useConfirm from "../../../hooks/useConfirm";
 import "../Home.css";
 
-const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
-
-// small helper to read token safely
-function readToken() {
-  try {
-    return localStorage.getItem("token");
-  } catch {
-    return null;
-  }
-}
-
 const Quizzes = ({ role, classroomCode }) => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
-  // keep token in state so UI reacts if it changes
-  const [token, setToken] = useState(() => readToken());
   const { messageComponent, showMessage } = useMessage();
   const [confirm, ConfirmModal] = useConfirm();
   const navigate = useNavigate();
@@ -29,7 +17,6 @@ const Quizzes = ({ role, classroomCode }) => {
   let storedUser = null;
   try {
     storedUser = JSON.parse(localStorage.getItem("user") || "null");
-    console.log("Stored user:", storedUser);
   } catch (e) {
     storedUser = null;
   }
@@ -48,24 +35,15 @@ const Quizzes = ({ role, classroomCode }) => {
     let mounted = true;
     (async () => {
       try {
-        // refresh token from storage (log for debugging)
-        const t = readToken();
-        console.log("token:", t);
-        // keep component state in sync with storage
-        if (t !== token) setToken(t);
         const endpoint =
           role === "teacher" ? "/classrooms/teacher" : "/classrooms/student";
-        const res = await fetch(`${API_BASE}${endpoint}`, {
-          headers: t ? { Authorization: `Bearer ${t}` } : {},
-        });
-        const data = await res.json();
+        const { data } = await apiFetch(endpoint);
         if (!mounted) return;
         if (data?.success) {
           // endpoint returns several shapes; prefer code field when present
           const serverCode =
             data.code ||
             data.classroom?.code ||
-            data.code ||
             data.classroomCode ||
             data.classroomId ||
             null;
@@ -77,20 +55,19 @@ const Quizzes = ({ role, classroomCode }) => {
             } catch {}
           }
         } else {
-          console.warn("Failed to fetch classroom code from server:", data);
           showMessage(
             "Failed to determine classroom. Please select a classroom first.",
             "error"
           );
         }
       } catch (err) {
-        console.error("Failed to request classroom code from server", err);
+        showMessage("[QUIZZES] Server Error", "error");
       }
     })();
     return () => {
       mounted = false;
     };
-  }, [classCode, role, showMessage, token]);
+  }, [classCode, role, showMessage]);
 
   useEffect(() => {
     if (!classCode) {
@@ -100,14 +77,10 @@ const Quizzes = ({ role, classroomCode }) => {
     let mounted = true;
     (async () => {
       try {
-        const t = readToken();
-        const res = await fetch(`${API_BASE}/quizes/${classCode}/quizzes`, {
-          headers: t ? { Authorization: `Bearer ${t}` } : {},
-        });
-        const data = await res.json();
+        const { data } = await apiFetch(`/quizzes/${classCode}/quizzes`);
         if (mounted && data?.success) setQuizzes(data.quizzes || []);
       } catch (e) {
-        console.error("Failed to load quizzes", e);
+        showMessage("Failed to load quizzes", "error");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -118,32 +91,17 @@ const Quizzes = ({ role, classroomCode }) => {
   }, [classCode]);
 
   function onCreate() {
-    // prevent navigation when either classroom or token is missing
-    const t = readToken();
-    console.log("onCreate token:", t);
-    if (!classCode) return showMessage("No classroom selected", "error");
-    if (!t) {
-      setToken(null);
-      return showMessage("You must be signed in to create a quiz", "error");
-    }
-    navigate(`/quizes/${classCode}/create`);
+    navigate(`/quizzes/${classCode}/create`);
   }
 
   function openQuiz(q) {
-    const t = readToken();
-    console.log("openQuiz token:", t);
     if (!classCode) return;
-    if (!t) return showMessage("You must be signed in to view a quiz", "error");
     if (role === "teacher")
-      navigate(`/quizes/${classCode}/quizzes/${q.id}/manage`);
-    else navigate(`/quizes/${classCode}/quizzes/${q.id}`);
+      navigate(`/quizzes/${classCode}/quizzes/${q.id}/manage`);
+    else navigate(`/quizzes/${classCode}/quizzes/${q.id}`);
   }
 
   async function deleteQuiz(q) {
-    const t = readToken();
-    if (!t)
-      return showMessage("You must be signed in to delete a quiz", "error");
-
     const ok = await confirm({
       title: "Delete quiz",
       message: `Delete "${q.title}"? This cannot be undone.`,
@@ -153,14 +111,9 @@ const Quizzes = ({ role, classroomCode }) => {
     if (!ok) return;
 
     try {
-      const res = await fetch(
-        `${API_BASE}/quizes/${classCode}/quizzes/${q.id}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${t}` },
-        }
-      );
-      const data = await res.json();
+      const { data } = await apiFetch(`/quizzes/${classCode}/quizzes/${q.id}`, {
+        method: "DELETE",
+      });
       if (data?.success) {
         setQuizzes((list) => list.filter((x) => x.id !== q.id));
         showMessage("Quiz deleted", "success");
@@ -168,14 +121,13 @@ const Quizzes = ({ role, classroomCode }) => {
         showMessage(data?.message || "Failed to delete quiz", "error");
       }
     } catch (e) {
-      console.error("Delete quiz failed", e);
       showMessage("Server error", "error");
     }
   }
 
   return (
     <TokenGuard
-      redirectTo="/login"
+      redirectInfo="/login"
       onExpire={() =>
         showMessage("Session expired. Please sign in again.", "error")
       }
@@ -270,7 +222,9 @@ const Quizzes = ({ role, classroomCode }) => {
                         className="quiz-action-btn edit"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/quizes/${classCode}/quizzes/${q.id}/edit`);
+                          navigate(
+                            `/quizzes/${classCode}/quizzes/${q.id}/edit`
+                          );
                         }}
                       >
                         Edit
@@ -280,7 +234,7 @@ const Quizzes = ({ role, classroomCode }) => {
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(
-                            `/quizes/${classCode}/quizzes/${q.id}/attempts`
+                            `/quizzes/${classCode}/quizzes/${q.id}/attempts`
                           );
                         }}
                       >
@@ -317,7 +271,9 @@ const Quizzes = ({ role, classroomCode }) => {
                           classCode,
                           quizId: q.id,
                         });
-                        navigate(`/quizes/${classCode}/quizzes/${q.id}/review`);
+                        navigate(
+                          `/quizzes/${classCode}/quizzes/${q.id}/review`
+                        );
                       }}
                       disabled={!classCode}
                       title={!classCode ? "Resolving classroom…" : ""}

@@ -1,131 +1,296 @@
+.dashboard-header .notification-icon {
+  position: absolute;
+}
+
 .notification-icon {
-  position: relative;
+  position: absolute;
+  top: 10.5vh;
+  left: 18px;
+  transform: none;
+  width: 50px;
+  height: 50px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.96),
+    rgba(255, 255, 255, 0.88)
+  );
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 18px rgba(11, 26, 40, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset;
   cursor: pointer;
+  transition: transform 0.32s, box-shadow 0.12s, background 0.12s;
+  overflow: hidden;
 }
 
-.svg {
-    position: absolute;
-    background: none;
-    left: 0;
-    top: 12vh;
-    margin: 0.3rem;
-    color: var(--accent-color);
+/* icon styling inside the frame (svg elements) */
+.notification-icon svg,
+.svg svg,
+.notification-icon i {
+  width: 30px;
+  height: 30px;
+  color: var(--accent-color);
+  fill: currentColor;
+  stroke: none;
+  display: block;
 }
 
+/* hover / active */
+.notification-icon:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 26px rgba(11, 26, 40, 0.14),
+    0 2px 0 rgba(255, 255, 255, 0.6) inset;
+  background: linear-gradient(180deg, #fff, #fafafa);
+}
+
+/* subtle focus for keyboard users */
+.notification-icon:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(77, 169, 255, 0.12),
+    0 6px 20px rgba(11, 26, 40, 0.12);
+}
+
+/* Add badge styles (you render notification-badge but had no CSS) */
 .notification-badge {
   position: absolute;
   top: -6px;
   right: -6px;
-  background-color: red;
-  color: white;
-  font-size: 0.65rem;
-  font-weight: bold;
-  padding: 2px 6px;
-  border-radius: 50%;
-  box-shadow: 0 0 2px rgba(0,0,0,0.2);
-  z-index: 10;
-  animation: pulse 1.5s infinite;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #fff;
 }
 
-.dashboard {
-    font-family: Arial, sans-serif;
-    background-color: #f0f4f8;
-    min-height: 100svh;
-    flex-direction: column;
-}
-
+/* Header */
 .dashboard-header {
-    background-color: var(--accent-color);
-    color: white;
-    padding: 1rem 2rem;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* center contents */
+  background-color: var(--accent-color);
+  color: white;
+  padding: 10px 18px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-welcome {
-    padding: 0.9rem 1.8rem;
-    border-radius: 20px;
-    font-weight: bold;
-    text-transform: capitalize;
-    background-color: white;
-    color: var(--accent-color);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-radius: 18px;
+  font-weight: 700;
+  text-transform: capitalize;
+  background: linear-gradient(180deg, #ffffff, #f1f5f9);
+  color: var(--accent-color);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-.role-badge.student {
-    color: #ffffff;
-    border-radius: 5px;
-    padding: 0.2rem 0.3rem;
-    cursor: default;
+/* Role chip */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #ffffff, #e2e8f0);
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
-.role-badge.teacher {
-    color: #ffffff;
-    border-radius: 5px;
-    padding: 0.2rem 0.3rem;
-    cursor: default;
+.role-badge .role-sub {
+  opacity: 0.85;
+  font-weight: 600;
 }
 
+/* Right-side actions (button aligns to bell area) */
+.header-actions {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+/* Pill button */
+.pill-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: linear-gradient(180deg, #ffffffcc, #ffffff99);
+  color: #0f172a;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  transition: background 0.15s ease, transform 0.12s ease,
+    border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.pill-btn:hover {
+  background: linear-gradient(180deg, #ffffffee, #ffffffb0);
+}
+.pill-btn:active {
+  transform: translateY(1px);
+}
+.pill-btn.active {
+  border-color: rgba(77, 169, 255, 0.7);
+  box-shadow: 0 2px 6px rgba(45, 140, 255, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset;
+}
+
+/* Page */
+.dashboard {
+  font-family: Arial, sans-serif;
+  background-color: #f0f4f8;
+  min-height: 100svh;
+  flex-direction: column;
+}
+
+/* Main content */
 .dashboard-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  gap: 24px;
 }
 
+/* Cards: wider, responsive */
 .dashboard-card {
-    background-color: white;
-    border-left: 6px solid var(--accent-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-radius: 10px;
-    padding: 1.5rem;
-    width: 80%;
-    max-width: 60svh;
-    margin-bottom: 2rem;
+  background-color: white;
+  border-left: 6px solid var(--accent-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 18px;
+  width: min(960px, 92vw);
+  margin: 0 auto;
 }
-
 .dashboard-card h2 {
-    margin-bottom: 1rem;
-    color: var(--accent-color);
+  margin-bottom: 10px;
+  color: var(--accent-color);
 }
 
-.dashboard-footer  {
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-    padding: 1rem;
-    font-size: 0.9rem;
-    color: #666;
-    margin: 1rem;
+/* Footer */
+.dashboard-footer {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+  margin: 1rem;
 }
-
 .footer-button-container {
-    display: flex;
-    flex-direction: column;
-    width: 50%;
-    transform: translateX(50%);
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 80vw);
+  margin: 0 auto;
 }
 
+/* Buttons */
 .dashboard-button {
-    background-color: var(--accent-color);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-bottom: 0.5rem;
-    transition: background-color 0.5s ease, transform 0.5s ease, box-shadow 0.5s ease;
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: background-color 0.2s ease, transform 0.12s ease,
+    box-shadow 0.2s ease;
+}
+.dashboard-button:hover {
+  background-color: #666;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.dashboard-button:hover {
-    background-color: #666;
-    transform: scale(1.10);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+/* Section manager layout */
+.section-manager .section-list {
+  display: grid;
+  gap: 10px;
+}
+.section-manager .section-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px 110px;
+  align-items: center;
+  gap: 12px;
+}
+.section-manager .section-row.muted {
+  opacity: 0.6;
+}
+.section-manager .identity {
+  min-width: 0;
+}
+.section-manager .identity strong {
+  display: block;
+}
+.section-manager .section-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
+.section-manager .btn-small {
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+/* Responsive tweaks */
+@media (max-width: 900px) {
+  .section-manager .section-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .section-manager .btn-small {
+    width: 100%;
+  }
+}
+
+/* small screens: move icons a little inwards to avoid overlap */
+@media (max-width: 720px) {
+  .dashboard-header {
+    padding: 10px 14px;
+  }
+  .notification-icon {
+    left: 12px;
+    top: 10px;
+    width: 36px;
+    height: 36px;
+  }
 }
 
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }

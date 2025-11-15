@@ -1,7 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "./css/burger_menu.css";
 
-const BurgerMenu = ({ openMenu, toggleMenu, classroomInfo }) => {
+const BurgerMenu = ({ openMenu, toggleMenu, classroomInfo, showMessage }) => {
+  const [copyCooldown, setCopyCooldown] = useState(false);
+  const COOLDOWN_MS = 2500;
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") toggleMenu(false);
@@ -9,6 +12,10 @@ const BurgerMenu = ({ openMenu, toggleMenu, classroomInfo }) => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggleMenu]);
+
+  const sectionValue = classroomInfo?.section || null;
+  const hasCode = !!classroomInfo?.code;
+  const canCopy = hasCode && !copyCooldown;
 
   return (
     <div className="burger-menu" role="region" aria-label="Menu">
@@ -38,15 +45,36 @@ const BurgerMenu = ({ openMenu, toggleMenu, classroomInfo }) => {
           <>
             <h3>Advisory Classroom</h3>
             <p>
-              <strong>Name:</strong> {classroomInfo.name}
+              <strong>Name:</strong> {classroomInfo.name || "-"}
             </p>
+            {sectionValue && (
+              <p>
+                <strong>Section:</strong> {sectionValue}
+              </p>
+            )}
             <p>
-              <strong>Code:</strong> {classroomInfo.code}
+              <strong>Code:</strong> {hasCode ? classroomInfo.code : "-"}
             </p>
             <button
-              onClick={() => navigator.clipboard.writeText(classroomInfo.code)}
+              type="button"
+              className={`copy-code-btn ${!hasCode ? "loading" : ""} ${
+                copyCooldown ? "cooldown" : ""
+              }`}
+              disabled={!canCopy}
+              aria-disabled={!canCopy}
+              onClick={() => {
+                if (!canCopy) return;
+                navigator.clipboard.writeText(classroomInfo.code);
+                showMessage("Code copied", "info");
+                setCopyCooldown(true);
+                setTimeout(() => setCopyCooldown(false), COOLDOWN_MS);
+              }}
             >
-              Copy Code
+              {!hasCode
+                ? "Waiting Code"
+                : copyCooldown
+                ? "Copied!"
+                : "Copy Code"}
             </button>
           </>
         ) : (

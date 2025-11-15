@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import useMessage from "../../hooks/useMessage";
 import "./ForgotPassword.css";
+import InputField from "../../components/InputField";
+import { apiFetchPublic } from "../../utils/apiClient.js";
 
 const reactAppUrl = process.env.REACT_APP_API_URL;
 
@@ -24,7 +26,6 @@ const ForgotPassword = () => {
 
   useEffect(() => {
     if (!role || !validRoles.includes(role)) {
-      localStorage.removeItem("token");
       localStorage.removeItem("user");
       showMessage(
         "Your role is not in the storage. Please choose again.",
@@ -32,7 +33,7 @@ const ForgotPassword = () => {
       );
       navigate("/");
     }
-  });
+  }, [role, navigate]);
 
   const handleSelect = (page = "login") => {
     navigate(`/${page}`);
@@ -51,22 +52,20 @@ const ForgotPassword = () => {
     setLoading(true);
     if (!code.trim()) {
       showMessage("Please enter the verification code.", "error");
+      setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch(`${reactAppUrl}/auth/verify-code`, {
+      const { ok, data } = await apiFetchPublic(`/auth/verify-code`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
       });
-
-      const data = await res.json();
-      if (data.success) {
+      if (ok && data?.success) {
         showMessage(data.message || "Email verified!", "success");
         setStep("reset");
       } else {
-        showMessage(data.message || "Invalid or expired code", "error");
+        showMessage(data?.message || "Invalid or expired code", "error");
       }
     } catch (err) {
       console.error(err);
@@ -81,28 +80,30 @@ const ForgotPassword = () => {
     setLoading(true);
     if (!email.trim()) {
       showMessage("Email is required.", "error");
+      setLoading(false);
       return;
     }
 
     if (!isValidEmail(email)) {
       showMessage("Please enter a valid email address.", "error");
+      setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch(`${reactAppUrl}/auth/request-verification`, {
+      const { ok, data } = await apiFetchPublic(`/auth/request-verification`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, role }),
       });
-
-      const data = await res.json();
-      if (data.success) {
+      if (ok && data?.success) {
         showMessage(data.message || "Verification code sent!", "success");
         setStep("code");
       } else {
         console.error(data);
-        showMessage(data.error || "Failed to send verification code.", "error");
+        showMessage(
+          data?.error || "Failed to send verification code.",
+          "error"
+        );
       }
     } catch (error) {
       showMessage("Server error. Please try again later.", "error");
@@ -115,28 +116,28 @@ const ForgotPassword = () => {
     setLoading(true);
     if (!newPassword || !retryPassword) {
       showMessage("Please fill in both password fields.", "error");
+      setLoading(false);
       return;
     }
 
     if (newPassword !== retryPassword) {
       showMessage("Passwords do not match.", "error");
+      setLoading(false);
       return;
     }
 
     if (newPassword.length < 6) {
       showMessage("Password must be at least 6 characters.", "error");
+      setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch(`${reactAppUrl}/auth/reset-password`, {
+      const { ok, data } = await apiFetchPublic(`/auth/reset-password`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, newPassword }),
       });
-
-      const data = await res.json();
-      if (data.success) {
+      if (ok && data?.success) {
         showMessage(data.message || "Password reset successful!", "success");
         setTimeout(() => navigate("/login"), 1500);
       } else {
@@ -183,15 +184,15 @@ const ForgotPassword = () => {
         </h1>
         {step === "verify" && (
           <form className="input-container" onSubmit={handleForgotSubmit}>
-            <label htmlFor="email">Email</label>
-            <input
+            <InputField
+              label="Email"
               name="email"
-              autoComplete="email"
-              type="text"
+              type="email"
               placeholder="Email"
-              className="inputF"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
             />
             <button
               type="submit"
@@ -204,15 +205,15 @@ const ForgotPassword = () => {
         )}
 
         {step === "code" && (
-          <form className="input-container" onSubmit={handleForgotSubmit}>
-            <label htmlFor="code">Verification Code</label>
-            <input
-              type="text"
+          <form className="input-container" onSubmit={handleCodeSubmit}>
+            <InputField
+              label="Verification Code"
               name="code"
-              className="inputF"
+              type="text"
               placeholder="Enter Code"
               value={code}
               onChange={(e) => setCode(e.target.value)}
+              required
             />
             <button
               type="submit"
@@ -225,35 +226,27 @@ const ForgotPassword = () => {
         )}
 
         {step === "reset" && (
-          <form className="input-container" onSubmit={handleForgotSubmit}>
-            <label htmlFor="reset">Reset Password</label>
-            <div className="password-wrapper">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="reset"
-                className={`inputF ${showPassword ? "fade-in" : ""}`}
-                placeholder="Enter new Password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <div className="password-wrapper">
-              <input
-                type={showPassword ? "text" : "password"}
-                name="reset"
-                className={`inputF ${showPassword ? "fade-in" : ""}`}
-                placeholder="Re-Enter Password"
-                value={retryPassword}
-                onChange={(e) => setRetryPassword(e.target.value)}
-              />
-            </div>
-            <button
-              type="button"
-              className={`eye-toggle ${showPassword ? "active" : ""}`}
-              onClick={togglePasswordVisibility}
-            >
-              {showPassword ? "🙈" : "👁️"}
-            </button>
+          <form className="input-container" onSubmit={handleResetSubmit}>
+            <InputField
+              label="Reset Password"
+              name="reset"
+              type="password"
+              placeholder="Enter new Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              showToggle
+              required
+            />
+            <InputField
+              label="Re-Enter Password"
+              name="retry"
+              type="password"
+              placeholder="Re-Enter Password"
+              value={retryPassword}
+              onChange={(e) => setRetryPassword(e.target.value)}
+              showToggle
+              required
+            />
             <button
               type="submit"
               disabled={loading}
@@ -263,6 +256,7 @@ const ForgotPassword = () => {
             </button>
           </form>
         )}
+
         {loading && (
           <div className="overlay-spinner">
             <div className="spinner"></div>

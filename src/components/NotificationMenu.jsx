@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "../utils/apiClient.js";
 import "./css/NotificationMenu.css";
 
 const NotificationMenu = ({ setUnreadCount, onClose }) => {
@@ -6,19 +7,20 @@ const NotificationMenu = ({ setUnreadCount, onClose }) => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState(new Set());
 
-  const markAsRead = (id) => {
-    const token = localStorage.getItem("token");
-    fetch(`${process.env.REACT_APP_API_URL}/notifications/${id}/read`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(() => {
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+  const markAsRead = async (id) => {
+    try {
+      const { unauthorized } = await apiFetch(`/notifications/${id}/read`, {
+        method: "POST",
+      });
+      if (unauthorized) return;
+      setNotifications((prev) => {
+        const next = prev.map((n) =>
+          n.id === id ? { ...n, is_read: true } : n
         );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-      })
-      .catch(() => {});
+        setUnreadCount(next.filter((n) => !n.is_read).length);
+        return next;
+      });
+    } catch {}
   };
 
   const toggleSelectionMode = () => {
@@ -40,24 +42,19 @@ const NotificationMenu = ({ setUnreadCount, onClose }) => {
     if (!selected.size) return;
     const ids = [...selected];
     try {
-      await fetch(`${process.env.REACT_APP_API_URL}/notifications/read-batch`, {
+      const { unauthorized } = await apiFetch(`/notifications/read-batch`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify({ ids }),
       });
-      setNotifications((prev) =>
-        prev.map((n) => (selected.has(n.id) ? { ...n, is_read: true } : n))
-      );
-      setSelected(new Set());
-      setUnreadCount((prev) => {
-        const newly = ids.filter(
-          (i) => prev > 0 && notifications.find((n) => n.id === i && !n.is_read)
-        ).length;
-        return Math.max(0, prev - newly);
+      if (unauthorized) return;
+      setNotifications((prev) => {
+        const next = prev.map((n) =>
+          selected.has(n.id) ? { ...n, is_read: true } : n
+        );
+        setUnreadCount(next.filter((n) => !n.is_read).length);
+        return next;
       });
+      setSelected(new Set());
     } catch (e) {
       // silent
     }
@@ -65,13 +62,10 @@ const NotificationMenu = ({ setUnreadCount, onClose }) => {
 
   const markAllRead = async () => {
     try {
-      await fetch(
-        `${process.env.REACT_APP_API_URL}/notifications/mark-all-read`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
-      );
+      const { unauthorized } = await apiFetch(`/notifications/mark-all-read`, {
+        method: "POST",
+      });
+      if (unauthorized) return;
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       setUnreadCount(0);
       setSelected(new Set());
@@ -81,19 +75,19 @@ const NotificationMenu = ({ setUnreadCount, onClose }) => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    fetch(`${process.env.REACT_APP_API_URL}/notifications`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
+    apiFetch(`/notifications`)
+      .then(({ unauthorized, data }) => {
+        if (unauthorized) {
+          setUnreadCount(0);
+          setNotifications([]);
+          return;
+        }
         const list = Array.isArray(data?.notifications)
           ? data.notifications
-          : Array.isArray(data?.message) // server older shape
+          : Array.isArray(data?.message)
           ? data.message
           : [];
-        const unread = list.filter((n) => !n.is_read).length;
-        setUnreadCount(unread);
+        setUnreadCount(list.filter((n) => !n.is_read).length);
         setNotifications(list);
       })
       .catch(() => {

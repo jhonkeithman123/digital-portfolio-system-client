@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import useMessage from "../../../hooks/useMessage";
+import { apiFetch } from "../../../../utils/apiClient.js";
+import useMessage from "../../../../hooks/useMessage.jsx";
 import QuizEditor from "./quiz";
-import TokenGuard from "../../../components/auth/tokenGuard";
-
-const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
+import TokenGuard from "../../../../components/auth/tokenGuard.jsx";
 
 function toPagesFromServerQuestions(raw) {
-   try {
+  try {
     const q = typeof raw === "string" ? JSON.parse(raw) : raw;
-    if (q && Array.isArray(q.pages)) return q.pages;           // already paged
-    if (Array.isArray(q)) {                                     // legacy flat array
+    if (q && Array.isArray(q.pages)) return q.pages; // already paged
+    if (Array.isArray(q)) {
+      // legacy flat array
       return [{ id: "page-1", title: "Page 1", questions: q }]; // single page fallback
     }
   } catch {}
@@ -24,36 +24,22 @@ export default function QuizEditPage() {
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState(null);
 
-  const token = useMemo(() => {
-    try {
-      return (
-        localStorage.getItem("token") ||
-        localStorage.getItem("authToken") ||
-        sessionStorage.getItem("token") ||
-        ""
-      );
-    } catch {
-      return "";
-    }
-  }, []);
-
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/quizes/${classCode}/quizzes/${quizId}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (res.status === 401 || res.status === 403) {
+        const { unauthorized, data } = await apiFetch(
+          `/quizzes/${classCode}/quizzes/${quizId}`
+        );
+        if (unauthorized) {
           showMessage("Session expired. Please sign in again.", "error");
           navigate("/login");
           return;
         }
-        const data = await res.json();
         if (!mounted) return;
         if (!data?.success) {
           showMessage(data?.message || "Failed to load quiz", "error");
-          navigate(`/quizes/${classCode}/quizzes`);
+          navigate(`/quizzes/${classCode}/quizzes`);
           return;
         }
         const qz = data.quiz;
@@ -68,7 +54,7 @@ export default function QuizEditPage() {
       } catch (e) {
         console.error("Failed to load quiz", e);
         showMessage("Server error loading quiz", "error");
-        navigate(`/quizes/${classCode}/quizzes`);
+        navigate(`/quizzes/${classCode}/quizzes`);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -76,13 +62,30 @@ export default function QuizEditPage() {
     return () => {
       mounted = false;
     };
-  }, [classCode, quizId, navigate, showMessage, token]);
+  }, [classCode, quizId, navigate, showMessage]);
 
-  if (loading) return <section className="quiz-card"><div style={{ padding: 16 }}>Loading…</div>{messageComponent}</section>;
-  if (!initialData) return <section className="quiz-card"><div style={{ padding: 16 }}>Quiz not found</div>{messageComponent}</section>;
+  if (loading)
+    return (
+      <section className="quiz-card">
+        <div style={{ padding: 16 }}>Loading…</div>
+        {messageComponent}
+      </section>
+    );
+  if (!initialData)
+    return (
+      <section className="quiz-card">
+        <div style={{ padding: 16 }}>Quiz not found</div>
+        {messageComponent}
+      </section>
+    );
 
   return (
-    <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
+    <TokenGuard
+      redirectInfo="/login"
+      onExpire={() =>
+        showMessage("Session expired. Please sign in again.", "error")
+      }
+    >
       {messageComponent}
       <QuizEditor classroomCode={classCode} initialData={initialData} />
     </TokenGuard>

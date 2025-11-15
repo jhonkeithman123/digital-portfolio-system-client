@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import TokenGuard from "../../../components/auth/tokenGuard";
-import useMessage from "../../../hooks/useMessage";
-import useConfirm from "../../../hooks/useConfirm";
-import "./quiz-take.css";
-
-const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
+import { apiFetch } from "../../../../utils/apiClient.js";
+import TokenGuard from "../../../../components/auth/tokenGuard.jsx";
+import useMessage from "../../../../hooks/useMessage.jsx";
+import useConfirm from "../../../../hooks/useConfirm.jsx";
+import "./css/quiz-take.css";
 
 function millisLeft(until) {
   const t = new Date(until).getTime() - Date.now();
@@ -41,111 +40,81 @@ export default function QuizTakePage() {
   const timerRef = useRef(null);
   const [timeLeftMs, setTimeLeftMs] = useState(null);
 
+  // Single quiz load on mount
   useEffect(() => {
-    // fetch quiz once (avoid unstable deps causing loops)
     let mounted = true;
     const ac = new AbortController();
     setLoading(true);
-
     (async () => {
       try {
-        const res = await fetch(
-          `${API_BASE}/quizes/${classCode}/quizzes/${quizId}`,
-          {
-            signal: ac.signal,
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
+        const { unauthorized, data } = await apiFetch(
+          `/quizzes/${classCode}/quizzes/${quizId}`,
+          { signal: ac.signal }
         );
-        const data = await res.json();
         if (!mounted) return;
-        if (!data?.success) {
-          // showMessage is optional here; call safely
-          showMessage &&
-            showMessage(data?.message || "Failed to load quiz", "error");
+        if (unauthorized || !data?.success) {
+          showMessage?.(data?.message || "Failed to load quiz", "error");
           setLoading(false);
           return;
         }
         const q = data.quiz;
         setQuiz(q);
-
-        // quiz.questions may be { pages: [...] } or array
         const raw = q.questions;
         let ps = [];
-        if (raw && Array.isArray(raw.pages)) {
-          ps = raw.pages;
-        } else if (Array.isArray(raw)) {
+        if (raw && Array.isArray(raw.pages)) ps = raw.pages;
+        else if (Array.isArray(raw))
           ps = [{ id: "page-1", title: "Page 1", questions: raw }];
-        }
-
-        // normalize page ids to strings to keep React keys stable
         ps = ps.map((pg, idx) => ({
           ...pg,
           id: String(pg.id ?? `page-${idx + 1}`),
         }));
-
         setPages(ps);
-        // compute total items
-        const cnt = ps.reduce(
-          (acc, p) => acc + ((p.questions && p.questions.length) || 0),
-          0
+        setQuestionsCount(
+          ps.reduce((a, p) => a + ((p.questions && p.questions.length) || 0), 0)
         );
-        setQuestionsCount(cnt);
       } catch (err) {
-        if (err.name === "AbortError") return;
-        console.error("Load quiz error", err);
-        showMessage && showMessage("Server error while loading quiz", "error");
+        if (err.name !== "AbortError") {
+          console.error("Load quiz error", err);
+          showMessage?.("Server error while loading quiz", "error");
+        }
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-
     return () => {
       mounted = false;
       ac.abort();
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [classCode, quizId]);
+  }, [classCode, quizId, showMessage]);
 
   // fetch quiz metadata (extracted so we can re-run after a failed attempt)
   async function fetchQuiz() {
     setLoading(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/quizes/${classCode}/quizzes/${quizId}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+      const { unauthorized, data } = await apiFetch(
+        `/quizzes/${classCode}/quizzes/${quizId}`
       );
-      const data = await res.json();
-      if (!data?.success) {
+      if (unauthorized || !data?.success) {
         showMessage(data?.message || "Failed to load quiz", "error");
         return;
       }
       const q = data.quiz;
       setQuiz(q);
-
       const raw = q.questions;
       let ps = [];
-      if (raw && Array.isArray(raw.pages)) {
-        ps = raw.pages;
-      } else if (Array.isArray(raw)) {
+      if (raw && Array.isArray(raw.pages)) ps = raw.pages;
+      else if (Array.isArray(raw))
         ps = [{ id: "page-1", title: "Page 1", questions: raw }];
-      }
       ps = ps.map((pg, idx) => ({
         ...pg,
         id: String(pg.id ?? `page-${idx + 1}`),
       }));
       setPages(ps);
-      const cnt = ps.reduce(
-        (acc, p) => acc + ((p.questions && p.questions.length) || 0),
-        0
+      setQuestionsCount(
+        ps.reduce((a, p) => a + ((p.questions && p.questions.length) || 0), 0)
       );
-      setQuestionsCount(cnt);
-
-      // update a small local last-checked time (optional)
-      setLastChecked?.(Date.now && Date.now());
+      setLastChecked(Date.now());
     } catch (err) {
       console.error("Load quiz error", err);
       showMessage("Server error while loading quiz", "error");
@@ -157,7 +126,6 @@ export default function QuizTakePage() {
   useEffect(() => {
     if (!classCode || !quizId) return;
     fetchQuiz();
-    // refresh attempts/metadata when window gets focus or becomes visible (user refresh or navigates back)
     const onFocus = () => fetchQuiz();
     const onVisibility = () => {
       if (!document.hidden) fetchQuiz();
@@ -176,19 +144,13 @@ export default function QuizTakePage() {
     if (!quiz) return;
     setStarting(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/quizes/${classCode}/quizzes/${quizId}/attempt`,
+      const { unauthorized, data } = await apiFetch(
+        `/quizzes/${classCode}/quizzes/${quizId}/attempt`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
         }
       );
-      const data = await res.json();
-      if (!data?.success) {
-        // if server says no attempts, refresh metadata so UI shows accurate remaining
+      if (unauthorized || !data?.success) {
         showMessage(data?.message || "Failed to start attempt", "error");
         await fetchQuiz();
         setStarting(false);
@@ -196,7 +158,6 @@ export default function QuizTakePage() {
       }
       setAttemptId(data.attemptId);
       setAttemptNo(data.attemptNo ?? null);
-      // immediately refresh quiz metadata to get updated attempts_remaining
       await fetchQuiz();
       const exp = data.expiresAt
         ? new Date(data.expiresAt)
@@ -257,24 +218,15 @@ export default function QuizTakePage() {
     setSubmitting(true);
     try {
       const payload = { attemptId, answers };
-      const res = await fetch(
-        `${API_BASE}/quizes/${classCode}/quizzes/${quizId}/submit`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
+      const { unauthorized, data } = await apiFetch(
+        `/quizzes/${classCode}/quizzes/${quizId}/submit`,
+        { method: "POST", body: JSON.stringify(payload) }
       );
-      const data = await res.json();
-      if (!data?.success) {
+      if (unauthorized || !data?.success) {
         showMessage(data?.message || "Failed to submit attempt", "error");
       } else {
         setResult({ score: data.score });
         showMessage("Attempt submitted", "success");
-        // stop timer
         if (timerRef.current) clearInterval(timerRef.current);
       }
     } catch (err) {
@@ -308,12 +260,11 @@ export default function QuizTakePage() {
       </div>
     );
 
-  // read current page and its questions
   const pg = pages[currentPage] || { title: "Page", questions: [] };
 
   return (
     <TokenGuard
-      redirectTo="/login"
+      redirectInfo="/login"
       onExpire={() =>
         showMessage("Session expired. Please sign in again.", "error")
       }

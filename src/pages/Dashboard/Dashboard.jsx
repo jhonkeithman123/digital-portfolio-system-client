@@ -1,329 +1,557 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
-import './Dashboard.css';
+import { useEffect, useState, useRef, useCallback } from "react";
+import "./Dashboard.css";
 import useTamperGuard from "../../security/useTamperGuard";
 import useMessage from "../../hooks/useMessage";
 import useLogout from "../../hooks/useLogout";
 import BurgerMenu from "../../components/burger_menu";
 import StudentInvite from "../../components/StudentInvite";
 import NotificationMenu from "../../components/NotificationMenu";
-import InvNotificationMenu from "../classrooms/InvNotificationMenu";
 import TokenGuard from "../../components/auth/tokenGuard";
+import InputField from "../../components/InputField";
+import { apiFetch } from "../../utils/apiClient";
 
 const roleColors = {
-    student: '#007bff',
-    teacher: '#dc3545',
+  student: "#007bff",
+  teacher: "#dc3545",
 };
-const reactAppUrl = process.env.REACT_APP_API_URL;
 
 const Dashboard = () => {
-    const navigate = useNavigate();
-    const [logout, LogoutModal] = useLogout();
+  const navigate = useNavigate();
+  const [logout, LogoutModal] = useLogout();
 
-    // For safegurading the useEffects to prevent infinite loops
-    const didInit = useRef(false);
-    const enrollmentChecked = useRef(false);
-    const quizzesLoadChecked = useRef(false);
+  // For safegurading the useEffects to prevent infinite loops
+  const didInit = useRef(false);
+  const enrollmentChecked = useRef(false);
+  const quizzesLoadChecked = useRef(false);
+  const teacherChecked = useRef(false);
+  const studentsLoadedRef = useRef(false);
 
-    const [user, setUser] = useState(null);
-    const [hasActivity, setHasActivity] = useState(false);
-    const [checkingEnrollment, setCheckingEnrollment] = useState(true);
-    const [classroomInfo, setClassroomInfo] = useState(null);
-    const [studentQuizzes, setStudentQuizzes] = useState([]);
-    const [loadingQuizzes, setLoadingQuizzes] = useState(false);
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [inviteOpen, setInviteOpen] = useState(false);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [showNotifications, setShowNotifications] = useState(false); 
+  const [user, setUser] = useState(null);
+  const [hasActivity, setHasActivity] = useState(false);
+  const [checkingEnrollment, setCheckingEnrollment] = useState(true);
+  const [classroomInfo, setClassroomInfo] = useState(null);
+  const [studentQuizzes, setStudentQuizzes] = useState([]);
+  const [loadingQuizzes, setLoadingQuizzes] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
-   const { messageComponent, showMessage } = useMessage();
+  const [showSections, setShowSections] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [editSections, setEditSections] = useState({}); // id -> string
+  const [mySection, setMySection] = useState(null); // for students
+  const [mySectionDraft, setMySectionDraft] = useState(""); // for students
+  const [savingMySection, setSavingMySection] = useState(false); // for students
 
-    useTamperGuard(user?.role, showMessage);
+  const { messageComponent, showMessage } = useMessage();
+  const displayName = (u) => u?.name || u?.username || "(No Name)";
 
-    useEffect(() => {
-        if (didInit.current) return;
-        didInit.current = true;
-        let timeoutId;
+  // Make showMessage stable for effects
+  const showMsgRef = useRef(showMessage);
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
-        const token = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
+  useTamperGuard(user?.role, showMsgRef.current);
 
-        if (!storedUser || !token) {
-            showMessage("Missing session data", "error");
-            timeoutId = setTimeout(() => {
-                return navigate('/login', { replace: true });
-            }, 1500);
-            return () => timeoutId && clearTimeout(timeoutId);
-        }
+  //* Init effect
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
 
+    (async () => {
+      const cachedUser = localStorage.getItem("user");
+      if (cachedUser) {
         try {
-            const parsedUser = JSON.parse(storedUser);
-            setUser((u) => (u && u.id === parsedUser.id ? u : parsedUser));
-            const accentColor = roleColors[parsedUser.role] || '#6c757d';
-            document.documentElement.style.setProperty('--accent-color', accentColor);
+          const parsed = JSON.parse(cachedUser);
+          setUser(parsed);
+          if (parsed.section) setMySection(parsed.section);
+          document.documentElement.style.setProperty(
+            "--accent-color",
+            roleColors[parsed.role] || "#6c757d"
+          );
         } catch {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            return navigate('/login', { replace: true });
+          localStorage.removeItem("user");
         }
+      }
 
-        fetch(`${reactAppUrl}/auth/session`, {
-            headers: { Authorization: `Bearer ${token}` }  
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (!data.success) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                navigate('/login', { replace: true });
-            }
-        })
-        .catch(() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            navigate('/login', { replace: true });
-        });
+      const { unauthorized, data } = await apiFetch("/auth/session");
+      if (unauthorized || !data?.success) {
+        showMsgRef.current("Session invalid", "error");
+        localStorage.removeItem("user");
+        navigate("/login", { replace: true });
+        setCheckingEnrollment(false);
+        return;
+      }
 
-        return () => timeoutId && clearTimeout(timeoutId);
-    }, [navigate, showMessage]);
+      // If server returns canonical user, override cache
+      if (data.user) {
+        setUser(data.user);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        if (data.user.section) setMySection(data.user.section);
+      }
 
-    // fetch quizzes for a student's classroom once we know the classroom code
-    useEffect(() => {
-        if (user?.role !== 'student' || !classroomInfo?.code) return;
-        let cancelled = false;
+      // Allow enrollment effect to proceed
+    })();
+  }, [navigate]);
 
-        if (quizzesLoadChecked.current) return;
-        quizzesLoadChecked.current = true;
-
-        const token = localStorage.getItem('token');
-        setLoadingQuizzes(true);
-        fetch(`${reactAppUrl}/quizes/${classroomInfo.code}/quizzes`, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        .then((res) => res.json())
-        .then((data) => {
-            if (cancelled) return;
-            if (data?.success && Array.isArray(data.quizzes)) {
-                setStudentQuizzes(data.quizzes);
-            } else {
-                console.warn('Failed to load quizzes for classroom', data);
-            }
-        })
-        .catch((err) => {
-            if (!cancelled) console.error('Error loading quizzes:', err);
-        })
-        .finally(() => {
-            if (!cancelled) setLoadingQuizzes(false);
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [user, classroomInfo]);
-    
-    function openQuiz(q) {
-        if (!classroomInfo?.code) return;
-        navigate(`/quizes/${classroomInfo.code}/quizzes/${q.id}`);
+  //* Keep mySection synced if user updates later
+  useEffect(() => {
+    if (user?.role === "student" && user.section && !mySection) {
+      setMySection(user.section);
     }
+  }, [user, mySection]);
 
-    useEffect(() => {
-        if (user?.role === 'student') {
-            if (enrollmentChecked.current) return;
-            enrollmentChecked.current = true;
+  //* Teacher: load students
+  useEffect(() => {
+    if (user?.role !== "teacher") return;
+    if (!showSections) {
+      studentsLoadedRef.current = false;
+      return;
+    }
+    if (studentsLoadedRef.current) return;
+    studentsLoadedRef.current = true;
+    setLoadingStudents(true);
 
-            const token = localStorage.getItem('token');
-            console.log('Students enrollment check: sending request', { studentId: user?.id, tokenPresent: !!token });
-
-            fetch(`${reactAppUrl}/classrooms/student`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) {
-                    showMessage("Failed to check classroom enrollment", "error");
-                } else if (!data.enrolled || !data.classroomId) {
-                    console.log('Student not enrolled, redirecting to join page');
-                    showMessage('Student not enrolled, redirecting to join page.');
-                    navigate('/join');
-                } else {
-                    console.log('Student enrolled:', data);
-                    setHasActivity(true);
-                    setClassroomInfo({ 
-                        name: data.name, 
-                        code: data.code,
-                        id: data.classroomId 
-                    });
-                }
-            })
-            .catch((err) => {
-                console.error('Enrollment check error:', err);
-                showMessage("Server error while checking classroom", "error");
-            })
-            .finally(() => {
-                setCheckingEnrollment(false);
-            });
-        } else if (user?.role === 'teacher') {
-            const token = localStorage.getItem('token');
-
-            fetch(`${reactAppUrl}/classrooms/teacher`, {
-            headers: { Authorization: `Bearer ${token}` }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) {
-                    showMessage("Failed to check classroom enrollment", "error");
-                } else if (!data.created) {
-                    navigate('/create');
-                } else {
-                    setHasActivity(true); // teacher has classrooms
-                    setClassroomInfo({ name: data.name, code: data.code });
-                }
-            })
-            .catch(() => {
-                showMessage("Server error while checking classroom", "error");
-            })
-            .finally(() => {
-                setCheckingEnrollment(false);
-            });
+    const abort = new AbortController();
+    apiFetch("/users/students", { signal: abort.signal })
+      .then(({ data }) => {
+        if (data?.success && Array.isArray(data.students)) {
+          setStudents(data.students);
+          const draft = {};
+          data.students.forEach((s) => {
+            if (!s.section) draft[s.id] = "";
+          });
+          setEditSections(draft);
+        } else {
+          showMsgRef.current("Failed to load students", "error");
         }
-    }, [user, navigate, showMessage]);
+      })
+      .catch((e) => {
+        if (e.name !== "AbortError")
+          showMsgRef.current("Server error while loading students", "error");
+      })
+      .finally(() => setLoadingStudents(false));
 
-    useEffect(() => {
-        const handlePopState = () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                showMessage("Unauthorized access", "error");
-                setTimeout(() => {
-                    navigate("/login");
-                }, 2000);
-            }
-        };
+    return () => abort.abort();
+  }, [user?.role, showSections]);
 
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState)
-    }, [navigate, showMessage]);
+  const saveSection = async (id) => {
+    const value = (editSections[id] ?? "").trim();
+    if (!value) return;
+    try {
+      const { data } = await apiFetch(`/users/${id}/section`, {
+        method: "PATCH",
+        body: JSON.stringify({ section: value }),
+      });
+      if (!data?.success) throw new Error();
+      setStudents((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, section: value } : s))
+      );
+      setEditSections((prev) => ({ ...prev, [id]: "" }));
+      showMessage("Section saved", "success");
+    } catch {
+      showMessage("Failed to save section", "error");
+    }
+  };
 
-    useEffect(() => {
-        if(user?.role === 'student') {
-            const activityExists = true;
-            setHasActivity(activityExists);
-        }
-    }, [user]);
+  //* Enrollment effect
+  useEffect(() => {
+    if (!user) return;
 
-    if (!user || checkingEnrollment) return null;
+    if (user.role === "student") {
+      if (enrollmentChecked.current) return;
+      enrollmentChecked.current = true;
 
+      apiFetch("/classrooms/student")
+        .then(({ data }) => {
+          if (!data?.success) {
+            showMsgRef.current("Failed to check enrollment", "error");
+          } else if (!data.enrolled || !data.classroomId) {
+            showMsgRef.current("Not enrolled. Join a classroom.", "info");
+            navigate("/join");
+          } else {
+            setHasActivity(true);
+            setClassroomInfo({
+              name: data.name,
+              code: data.code,
+              id: data.classroomId,
+            });
+          }
+        })
+        .catch(() =>
+          showMsgRef.current("Server error while checking classroom", "error")
+        )
+        .finally(() => setCheckingEnrollment(false));
+    } else if (user.role === "teacher") {
+      if (teacherChecked.current) return;
+      teacherChecked.current = true;
+
+      apiFetch("/classrooms/teacher")
+        .then(({ data }) => {
+          if (!data?.success) {
+            showMsgRef.current("Failed to check classroom", "error");
+          } else if (!data.created) {
+            navigate("/create");
+          } else {
+            setHasActivity(true);
+            setClassroomInfo({
+              name: data.name,
+              code: data.code,
+              section: data.section ?? null,
+            });
+          }
+        })
+        .catch(() =>
+          showMsgRef.current("Server error while checking classroom", "error")
+        )
+        .finally(() => setCheckingEnrollment(false));
+    }
+  }, [user, navigate]);
+
+  const saveMySection = async () => {
+    const value = mySectionDraft.trim();
+    if (!value) return;
+    setSavingMySection(true);
+    try {
+      const { data } = await apiFetch("/auth/me/section", {
+        method: "PATCH",
+        body: JSON.stringify({ section: value }),
+      });
+      if (data?.success) {
+        setMySection(value);
+        const stored = localStorage.getItem("user");
+        try {
+          const parsed = stored ? JSON.parse(stored) : {};
+          const merged = { ...parsed, section: value };
+          localStorage.setItem("user", JSON.stringify(merged));
+          setUser((u) => ({ ...(u || {}), section: value }));
+        } catch {}
+        showMessage("Section saved", "success");
+      } else {
+        showMessage(data?.message || "Could not set section", "error");
+      }
+    } catch {
+      showMessage("Server error", "error");
+    } finally {
+      setSavingMySection(false);
+    }
+  };
+
+  //* Quizzes effect
+  useEffect(() => {
+    if (user?.role !== "student" || !classroomInfo?.code) return;
+    if (quizzesLoadChecked.current) return;
+    quizzesLoadChecked.current = true;
+
+    setLoadingQuizzes(true);
+    apiFetch(`/quizzes/${classroomInfo.code}/quizzes`)
+      .then(({ data }) => {
+        if (Array.isArray(data?.quizzes)) setStudentQuizzes(data.quizzes);
+      })
+      .catch((err) => console.error("Error loading quizzes:", err))
+      .finally(() => setLoadingQuizzes(false));
+  }, [user?.role, classroomInfo?.code]);
+
+  function openQuiz(q) {
+    if (!classroomInfo?.code) return;
+    navigate(`/quizzes/${classroomInfo.code}/quizzes/${q.id}`);
+  }
+
+  //* History pop state check (revalidate session)
+  useEffect(() => {
+    const handlePopState = async () => {
+      const { unauthorized, data } = await apiFetch("/auth/session");
+      if (unauthorized || !data?.success) {
+        showMessage("Unauthorized access", "error");
+        setTimeout(() => navigate("/login"), 1200);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [navigate, showMessage]);
+
+  useEffect(() => {
+    if (user?.role === "student") setHasActivity(true);
+  }, [user]);
+
+  const onExpire = useCallback(() => {
+    showMsgRef.current("Session expired. Please sign in again.", "error");
+  }, []);
+
+  if (!user || checkingEnrollment) {
     return (
-        <TokenGuard redirectTo="/login" onExpire={() => showMessage("Session expired. Please sign in again.", "error")}>
-            {inviteOpen && (
-                <StudentInvite 
-                    classroomCode={classroomInfo.code}
-                    onClose={() => setInviteOpen(false)}
-                    onInvite={(studentId) => showMessage(`Invited student ID ${studentId}`, 'info')}
-                />
-            )}
-
-            {messageComponent}
-
-            <BurgerMenu
-                openMenu={menuOpen}
-                toggleMenu={setMenuOpen}
-                classroomInfo={classroomInfo}
-            />
-
-            <div className="notification-icon" onClick={() => setShowNotifications(prev => !prev)}>
-                <svg className="svg" width="30" height="30" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2a7 7 0 0 0-7 7v4.5l-1.7 2.6a1 1 0 0 0 .8 1.6h16a1 1 0 0 0 .8-1.6L19 13.5V9a7 7 0 0 0-7-7zm0 20a2.5 2.5 0 0 0 2.5-2.5h-5A2.5 2.5 0 0 0 12 22z"/>
-                </svg>
-                {unreadCount > 0 && (
-                    <span className="notification-badge">{unreadCount}</span>
-                )}
-            </div>
-
-            {showNotifications && (
-                <NotificationMenu 
-                    setUnreadCount={setUnreadCount}
-                    onClose={() => setShowNotifications(false)}
-                />
-            )}
-
-            <div className="dashboard">
-                <header className="dashboard-header">
-                    <div className="dashboard-welcome">
-                        <h1>Welcome, {user.name}</h1>
-                        <span className={`role-badge ${user.role}`}>{user.role}</span>
-                    </div>
-                </header>
-                <main className="dashboard-main">
-                    <section className="dashboard-card">
-                        <h2>Recent Activity</h2>
-                        <p>No Submission yet. Start by uploading your work!</p>
-
-                        {(user.role === 'teacher' || (user.role === 'student' && hasActivity)) && (
-                            <button
-                                className="dashboard-button"
-                                onClick={() => navigate('/home')}
-                                style={{ marginTop: '1rem' }}
-                            >
-                                Go to Upload Page
-                            </button>
-                        )}
-                    </section>
-
-                    {user?.role === 'student' && (
-                        <section className="dashboard-card">
-                            <h2>Available Quizzes</h2>
-                            {loadingQuizzes ? (
-                                <p>Loading quizzes…</p>
-                            ) : studentQuizzes.length ? (
-                                <ul>
-                                    {studentQuizzes.map((q) => (
-                                        <li key={q.id} style={{ marginBottom: 8 }}>
-                                            <strong>{q.title}</strong>{" "}
-                                            <button className="dashboard-button" style={{ marginLeft: 8 }} onClick={() => openQuiz(q)}>
-                                                Start
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p>No quizzes available yet.</p>
-                            )}
-                        </section>
-                    )}
-
-                    <section className="dashboard-card">
-                        <h2>Feedback Summary</h2>
-                        {user.role === 'teacher' ? (
-                            <>
-                                <p>You have not yet given feedback summary to student works. Give one tot he upload page.</p>
-                                <button className="dashboard-button" onClick={() => navigate("/home")}>Give feedback</button>
-                            </>
-                        ) : (
-                            <p>No feedback available. Check back after your teacher reviews your work.</p>
-                        )}
-                    </section>
-                </main>
-
-                <footer className="dashboard-footer">
-                        <div className="footer-button-container">
-                            {user.role === 'teacher' && classroomInfo && (
-                                <button 
-                                    className="dashboard-button"
-                                    onClick={() => setInviteOpen(true)}
-                                    style={{ marginBottom: '1rem' }}    
-                                >
-                                    Invite Students
-                                </button>
-                            )}
-
-                            <LogoutModal />
-                            <button className="dashboard-button" onClick={() => logout()}>Logout</button>
-                        </div>
-                    <div>@ 2025 Digital Portfolio System</div>
-                </footer>
-            </div>
-        </TokenGuard>
+      <div style={{ padding: 32, fontFamily: "Arial" }}>
+        <p>Loading dashboard…</p>
+      </div>
     );
+  }
+
+  const content = (
+    <>
+      {inviteOpen && (
+        <StudentInvite
+          classroomCode={classroomInfo.code}
+          onClose={() => setInviteOpen(false)}
+          onInvite={(studentId) =>
+            showMessage(`Invited student ID ${studentId}`, "info")
+          }
+        />
+      )}
+
+      {messageComponent}
+
+      <BurgerMenu
+        openMenu={menuOpen}
+        toggleMenu={setMenuOpen}
+        classroomInfo={classroomInfo}
+        showMessage={showMessage}
+      />
+
+      <div
+        className="notification-icon"
+        onClick={() => setShowNotifications((prev) => !prev)}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M12 2a7 7 0 0 0-7 7v4.5l-1.7 2.6a1 1 0 0 0 .8 1.6h16a1 1 0 0 0 .8-1.6L19 13.5V9a7 7 0 0 0-7-7zm0 20a2.5 2.5 0 0 0 2.5-2.5h-5A2.5 2.5 0 0 0 12 22z" />
+        </svg>
+        {unreadCount > 0 && (
+          <span className="notification-badge">{unreadCount}</span>
+        )}
+      </div>
+
+      {showNotifications && (
+        <NotificationMenu
+          setUnreadCount={setUnreadCount}
+          onClose={() => setShowNotifications(false)}
+        />
+      )}
+
+      <div className="dashboard">
+        <header className="dashboard-header">
+          <div className="dashboard-welcome">
+            <h1>Welcome, {displayName(user)}</h1>
+            <span className={`role-badge ${user.role}`} data-role={user.role}>
+              {user.role}
+              {user.role === "student"
+                ? (user.section || mySection) && (
+                    <span className="role-sub">
+                      {" "}
+                      • {user.section || mySection}
+                    </span>
+                  )
+                : classroomInfo?.section && (
+                    <span className="role-sub"> • {classroomInfo.section}</span>
+                  )}
+            </span>
+          </div>
+          <div className="header-actions">
+            {user.role === "teacher" && (
+              <button
+                className={`pill-btn ${showSections ? "active" : ""}`}
+                aria-pressed={showSections}
+                onClick={() => setShowSections((s) => !s)}
+                title="Manage student sections"
+              >
+                {showSections ? "Hide Student Sections" : "Manage Sections"}
+              </button>
+            )}
+          </div>
+        </header>
+        <main className="dashboard-main">
+          {/* Student self-serve section (only when null/empty) */}
+          {user.role === "student" && !user.section && !mySection && (
+            <section className="dashboard-card">
+              <h2>Set Your Section</h2>
+              <p>
+                Please enter your section once. You cannot change it later here.
+              </p>
+              <div style={{ maxWidth: 520 }}>
+                <InputField
+                  size="auto"
+                  label="Section"
+                  name="my-section"
+                  placeholder="e.g., 7-A, STEM-2"
+                  value={mySectionDraft}
+                  onChange={(e) => setMySectionDraft(e.target.value)}
+                  onEnter={() => !savingMySection && saveMySection()}
+                />
+              </div>
+              <button
+                className="dashboard-button"
+                onClick={saveMySection}
+                disabled={savingMySection || !mySectionDraft.trim()}
+                style={{ marginTop: 8 }}
+              >
+                {savingMySection ? "Saving…" : "Save Section"}
+              </button>
+            </section>
+          )}
+          {user.role === "teacher" && showSections && (
+            <section className="dashboard-card section-manager">
+              <h2>Student Sections</h2>
+              <p>
+                Only students without a section are editable. Others are grayed
+                out.
+              </p>
+              {loadingStudents ? (
+                <p>Loading students…</p>
+              ) : students.length === 0 ? (
+                <p>No students found.</p>
+              ) : (
+                <div className="section-list">
+                  {students.map((s) => {
+                    const hasSection = !!s.section;
+                    return (
+                      <div
+                        key={s.id}
+                        className={`section-row ${hasSection ? "muted" : ""}`}
+                      >
+                        <div className="identity">
+                          <div>
+                            <strong>{s.username}</strong>
+                          </div>
+                          <div style={{ fontSize: 12, color: "#64748b" }}>
+                            {s.email}
+                          </div>
+                        </div>
+                        <input
+                          className="section-input"
+                          placeholder={hasSection ? s.section : "Enter section"}
+                          value={
+                            hasSection ? s.section : editSections[s.id] ?? ""
+                          }
+                          onChange={(e) =>
+                            setEditSections((prev) => ({
+                              ...prev,
+                              [s.id]: e.target.value,
+                            }))
+                          }
+                          disabled={hasSection}
+                        />
+                        <button
+                          className="dashboard-button btn-small"
+                          onClick={() => saveSection(s.id)}
+                          disabled={
+                            hasSection || !(editSections[s.id] || "").trim()
+                          }
+                        >
+                          Save
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
+          <section className="dashboard-card">
+            <h2>Recent Activity</h2>
+            <p>No Submission yet. Start by uploading your work!</p>
+
+            {(user.role === "teacher" ||
+              (user.role === "student" && hasActivity)) && (
+              <button
+                className="dashboard-button"
+                onClick={() => navigate("/home")}
+                style={{ marginTop: "1rem" }}
+              >
+                Go to Upload Page
+              </button>
+            )}
+          </section>
+
+          {user?.role === "student" && (
+            <section className="dashboard-card">
+              <h2>Available Quizzes</h2>
+              {loadingQuizzes ? (
+                <p>Loading quizzes…</p>
+              ) : studentQuizzes.length ? (
+                <ul>
+                  {studentQuizzes.map((q) => (
+                    <li key={q.id} style={{ marginBottom: 8 }}>
+                      <strong>{q.title}</strong>{" "}
+                      <button
+                        className="dashboard-button"
+                        style={{ marginLeft: 8 }}
+                        onClick={() => openQuiz(q)}
+                      >
+                        Start
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No quizzes available yet.</p>
+              )}
+            </section>
+          )}
+
+          <section className="dashboard-card">
+            <h2>Feedback Summary</h2>
+            {user.role === "teacher" ? (
+              <>
+                <p>
+                  You have not yet given feedback summary to student works. Give
+                  one tot he upload page.
+                </p>
+                <button
+                  className="dashboard-button"
+                  onClick={() => navigate("/home")}
+                >
+                  Give feedback
+                </button>
+              </>
+            ) : (
+              <p>
+                No feedback available. Check back after your teacher reviews
+                your work.
+              </p>
+            )}
+          </section>
+        </main>
+
+        <footer className="dashboard-footer">
+          <div className="footer-button-container">
+            {user.role === "teacher" && classroomInfo && (
+              <button
+                className="dashboard-button"
+                onClick={() => setInviteOpen(true)}
+                style={{ marginBottom: "1rem" }}
+              >
+                Invite Students
+              </button>
+            )}
+
+            <LogoutModal />
+            <button className="dashboard-button" onClick={() => logout()}>
+              Logout
+            </button>
+          </div>
+          <div>@ 2025 Digital Portfolio System</div>
+        </footer>
+      </div>
+    </>
+  );
+
+  return (
+    <TokenGuard
+      redirectInfo="/login"
+      onExpire={onExpire}
+      loadingFallback={<div style={{ padding: 32 }}>Validating session…</div>}
+    >
+      {content}
+    </TokenGuard>
+  );
 };
 
 export default Dashboard;

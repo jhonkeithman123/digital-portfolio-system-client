@@ -35,27 +35,48 @@
 .home-header {
   background-color: var(--accent-color);
   color: white;
-  padding: 1rem 2rem;
-  text-align: center;
-  box-shadow: var(--shadow-md);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .home-welcome {
-  padding: 0.9rem 1.8rem;
-  border-radius: 20px;
-  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-radius: 18px;
+  font-weight: 700;
   text-transform: capitalize;
-  background-color: white;
+  background: linear-gradient(180deg, #ffffff, #f1f5f9);
   color: var(--accent-color);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .role-badge {
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  background-color: var(--accent-color);
-  color: white;
-  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffffff, #e2e8f0);
+  color: #0f172a;
+  font-weight: 700;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.role-badge .role-sub {
+  margin-left: 6px;
+  font-weight: 600;
+  color: #0f172a;
+  opacity: 0.9;
+  white-space: nowrap;
 }
 
 /** Upload Component */
@@ -87,6 +108,18 @@
 
 .upload-zone:hover .upload-icon {
   transform: translateY(-5px);
+}
+
+.empty-upload p {
+  margin: 6px 0 0;
+  color: #475569;
+  font-size: 14px;
+}
+.empty-upload {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 130px;
 }
 
 .file-input-hidden {
@@ -189,6 +222,34 @@
   opacity: 1;
   background-color: rgba(220, 53, 69, 0.1);
   transform: scale(1.1);
+}
+
+.upload-form {
+  margin-bottom: 12px;
+}
+
+.form-row {
+  margin-bottom: 12px;
+}
+
+.form-row label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.form-row input,
+.form-row textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) inset;
+}
+
+.form-row textarea {
+  resize: vertical;
 }
 
 /** Quiz Component*/
@@ -500,6 +561,16 @@
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .home-welcome {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .role-badge {
+    order: 2;
   }
 }
 

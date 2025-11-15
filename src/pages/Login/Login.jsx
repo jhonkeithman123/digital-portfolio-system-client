@@ -7,14 +7,15 @@ import {
   localStorageGet,
   localStorageSet,
 } from "../../utils/modifyFromLocalStorage";
+import { apiFetchPublic } from "../../utils/apiClient.js";
 import "./Login.css";
+import InputField from "../../components/InputField";
 
 const Login = () => {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
 
   const { messageComponent, showMessage } = useMessage();
 
@@ -23,6 +24,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   const valid_roles = useMemo(() => ["student", "teacher"], []);
+
   useEffect(() => {
     localStorageRemove({ keys: ["token", "user", "currentClassroom"] });
 
@@ -36,8 +38,6 @@ const Login = () => {
   const handleSelect = (page = "login") => {
     navigate(`/${page}`);
   };
-
-  const apiUrl = process.env.REACT_APP_API_URL;
 
   const validation = () => {
     const newErrors = {};
@@ -62,24 +62,27 @@ const Login = () => {
       return;
     }
 
-    fetch(`${apiUrl}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, role }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          showMessage("Login successfull", "success");
-          setUser(data.user);
-          localStorageSet({
-            keys: ["token", "user", "role"],
-            values: [data.token, JSON.stringify(data.user), data.user.role],
-          });
-          navigate(`/dash`);
-        } else {
-          showMessage(data.error || "Login failed", "error");
+    apiFetchPublic(
+      `/auth/login`,
+      {
+        method: "POST",
+        body: JSON.stringify({ email, password, role }),
+      },
+      { withCredentials: true }
+    ) // include to receive httpOnly cookie
+      .then(({ ok, data }) => {
+        if (!ok || !data?.success) {
+          const msg = data?.error || "Login failed";
+          showMessage(msg, "error");
+          return;
         }
+        showMessage("Login successfull", "success");
+        setUser(data.user);
+        localStorageSet({
+          keys: ["user", "role"],
+          values: [JSON.stringify(data.user), data.user.role],
+        });
+        navigate(`/dash`);
       })
       .catch((err) => {
         console.error("Login error:", err);
@@ -109,35 +112,27 @@ const Login = () => {
           Login as {role ? role.toUpperCase() : "GUEST"}
         </h1>
         <div className="input-container">
-          <label htmlFor="email">Email</label>
-          <input
+          <InputField
+            label="Email"
             name="email"
+            type="email"
             value={email}
-            autoComplete="email"
-            type="text"
-            placeholder="Email"
-            className="inputL"
             onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            placeholder="Email"
+            required
           />
-
-          <label htmlFor="password">Password</label>
-          <div className="password-wrapper">
-            <input
-              name="password"
-              value={password}
-              autoComplete="current-password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              className="inputL"
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <span
-              className="toggle-icon"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? "🙈" : "👁️"}
-            </span>
-          </div>
+          <InputField
+            label="Password"
+            name="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            placeholder="Password"
+            showToggle
+            required
+          />
         </div>
         <div className="buttonContainerL">
           <button type="submit" className="buttonL">

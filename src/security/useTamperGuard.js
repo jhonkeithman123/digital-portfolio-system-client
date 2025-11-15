@@ -1,72 +1,101 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-const useTamperGuard = (expectedRole, showMessage) => {
+const useTamperGuard = (
+  expectedRole,
+  showMessage,
+  { intervalMs = 3000, enabled = true } = {}
+) => {
   const navigate = useNavigate();
 
+  const showMsgRef = useRef(showMessage);
   useEffect(() => {
-    // don't attach the interval when we don't yet know the expected role
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
+
+  const triggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (!enabled) return;
     if (!expectedRole) return;
+    if (triggeredRef.current) return;
 
     let stopped = false;
 
+    const serverLogout = () => {
+      // Clear httpOnly cookie on server
+      fetch(`${process.env.REACT_APP_API_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {});
+    };
+
+    const safeNotify = (text, kind = "error", redirect = "/") => {
+      if (triggeredRef.current) return;
+      triggeredRef.current = true;
+      try {
+        showMsgRef.current?.(text, kind);
+      } catch {}
+      try {
+        localStorage.removeItem("user");
+      } catch {}
+      serverLogout();
+      setTimeout(() => navigate(redirect, { replace: true }), 1200);
+    };
+
     const checkLocalStorage = () => {
+      if (triggeredRef.current) return;
       const storedUser = localStorage.getItem("user");
       if (!storedUser) return;
       try {
         const parsedUser = JSON.parse(storedUser);
-        const currentRole = parsedUser.role;
-        if (currentRole !== expectedRole) {
-          showMessage("role tampering detected", "error");
-          localStorage.removeItem("user");
-          localStorage.removeItem("token");
-          setTimeout(() => navigate("/"), 2000);
+        const currentRole = parsedUser?.role;
+        if (currentRole && String(currentRole) !== String(expectedRole)) {
+          safeNotify("Role tampering detected", "error", "/");
         }
       } catch {
-        showMessage("Corrupted user data", "error");
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        navigate("/");
+        safeNotify("Corrupted user data", "error", "/");
       }
     };
 
     const checkDOM = () => {
+      if (triggeredRef.current) return;
       const badge = document.querySelector(".role-badge");
-      if (
-        badge &&
-        badge.textContent.trim().toLowerCase() !== expectedRole.toLowerCase()
-      ) {
-        showMessage("DOM tampering detected", "error");
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        setTimeout(() => navigate("/"), 2000);
+      if (!badge) return;
+
+      const expected = String(expectedRole).toLowerCase();
+      const domRole = (badge.getAttribute("data-role") || "").toLowerCase();
+
+      // Only act on explicit dataset mismatch; do NOT rely on visible text
+      if (domRole && domRole !== expected) {
+        safeNotify("DOM tampering detected", "error", "/");
       }
     };
 
     const checkingScripts = () => {
+      if (triggeredRef.current) return;
       if (window.hackedFunction) {
-        showMessage("Suspicious script detected", "error");
-        setTimeout(() => navigate("/login"), 2000);
+        safeNotify("Suspicious script detected", "error", "/login");
       }
     };
 
-    // run checks once immediately (avoid waiting for first interval)
+    // Initial checks
     checkLocalStorage();
     checkDOM();
     checkingScripts();
 
     const interval = setInterval(() => {
-      if (stopped) return;
+      if (stopped || triggeredRef.current) return;
       checkLocalStorage();
       checkDOM();
       checkingScripts();
-    }, 3000);
+    }, Math.max(500, Number(intervalMs) || 3000));
 
     return () => {
       stopped = true;
       clearInterval(interval);
     };
-  }, [expectedRole, showMessage, navigate]);
+  }, [expectedRole, navigate, enabled, intervalMs]);
 };
 
 export default useTamperGuard;

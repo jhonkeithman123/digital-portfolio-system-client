@@ -3,13 +3,16 @@ import Header from "../../components/Header";
 import useMessage from "../../hooks/useMessage";
 import "./Signup.css";
 import { useEffect, useState } from "react";
+import InputField from "../../components/InputField";
+import { apiFetchPublic } from "../../utils/apiClient.js";
 
 const reactAppUrl = process.env.REACT_APP_API_URL;
 
 const Signup = () => {
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [section, setSection] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -22,7 +25,6 @@ const Signup = () => {
 
   useEffect(() => {
     if (!role || !validRoles.includes(role)) {
-      localStorage.removeItem("token");
       localStorage.removeItem("user");
       showMessage(
         "Your role is not in the storage. Please choose again.",
@@ -39,7 +41,7 @@ const Signup = () => {
   };
 
   const validate = () => {
-    if (!name || !email || !password) {
+    if (!username || !email || !password) {
       showMessage("All fields are required", "error");
       return false;
     }
@@ -65,18 +67,26 @@ const Signup = () => {
   const handleSignup = () => {
     if (!validate()) return;
 
-    fetch(`${reactAppUrl}/auth/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, role }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
+    apiFetchPublic(
+      `/auth/signup`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          role,
+          section: role === "student" ? section.trim() || null : null,
+        }),
+      },
+      { withCredentials: false } // no cookie needed on signup
+    )
+      .then(({ ok, data }) => {
+        if (ok && data?.success) {
           showMessage("Signup successful! Redirecting...", "success");
           setTimeout(() => navigate(`/login?role=${role}`), 1500);
         } else {
-          showMessage(data.error || "Singup failed", "error");
+          showMessage(data?.error || "Signup failed", "error");
         }
       })
       .catch(() => showMessage("Server error", "error"));
@@ -104,55 +114,60 @@ const Signup = () => {
           Sign Up as a {role ? role.toUpperCase() : "GUEST"}
         </h1>
         <div className="input-containerS">
-          <label htmlFor="username">Username</label>
-          <input
+          <InputField
+            label="Username"
             name="username"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             autoComplete="username"
             placeholder="Username"
-            className="inputS"
+            required
           />
-          <label htmlFor="email">Email</label>
-          <input
+
+          {role === "student" && (
+            <InputField
+              label="Section (optional)"
+              name="section"
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+              placeholder="e.g. 7-A, STEM-2"
+            />
+          )}
+
+          <InputField
+            label="Email"
             name="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
             placeholder="Email"
-            className="inputS"
+            required
           />
-          <div className="password-wrapperS">
-            <label htmlFor="password">Password</label>
-            <input
-              name="password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new password"
-              placeholder="Password"
-              className="inputS"
-            />
-            <span
-              className="toggle-iconS"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? "🙈" : "👁️"}
-            </span>
 
-            <label htmlFor="password">Confirm Password</label>
-            <input
-              name="password"
-              type={showPassword ? "text" : "password"}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new password"
-              placeholder="Password"
-              className="inputS"
-            />
-          </div>
+          <InputField
+            label="Password"
+            name="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            placeholder="Password"
+            showToggle
+            required
+          />
+
+          <InputField
+            label="Confirm Password"
+            name="confirm"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            placeholder="Confirm Password"
+            showToggle
+            required
+          />
         </div>
         <div className="button-containerS">
           <button type="submit" className="buttonS">

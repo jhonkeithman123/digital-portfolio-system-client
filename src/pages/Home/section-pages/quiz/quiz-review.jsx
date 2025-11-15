@@ -1,10 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import TokenGuard from "../../../components/auth/tokenGuard";
-import useMessage from "../../../hooks/useMessage";
-import "./quiz-review.css";
-
-const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
+import { apiFetch } from "../../../../utils/apiClient.js";
+import TokenGuard from "../../../../components/auth/tokenGuard.jsx";
+import useMessage from "../../../../hooks/useMessage.jsx";
+import "./css/quiz-review.css";
 
 export default function QuizReviewPage() {
   const params = useParams();
@@ -41,16 +40,17 @@ export default function QuizReviewPage() {
     attemptsControllerRef.current = ac;
     setLoading(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/quizes/${classCode}/quizzes/${quizId}/attempts?status=${encodeURIComponent(
+      const { unauthorized, data } = await apiFetch(
+        `/quizzes/${classCode}/quizzes/${quizId}/attempts?status=${encodeURIComponent(
           filter
         )}`,
-        {
-          signal: ac.signal,
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        { signal: ac.signal }
       );
-      const data = await res.json();
+      if (unauthorized) {
+        showMessage("Session expired. Please sign in again.", "error");
+        setAttempts([]);
+        return;
+      }
       if (!mountedRef.current) return;
       if (!data?.success) {
         showMessage(data?.message || "Failed to load attempts", "error");
@@ -118,14 +118,10 @@ export default function QuizReviewPage() {
       return;
     }
     try {
-      const res = await fetch(
-        `${API_BASE}/quizes/${classCode}/quizzes/${quizId}/attempts/${selected.id}/grade`,
+      const { unauthorized, data } = await apiFetch(
+        `/quizzes/${classCode}/quizzes/${quizId}/attempts/${selected.id}/grade`,
         {
           method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
           body: JSON.stringify({
             score: scoreNum,
             grading: gradingPayload,
@@ -133,7 +129,10 @@ export default function QuizReviewPage() {
           }),
         }
       );
-      const data = await res.json();
+      if (unauthorized) {
+        showMessage("Session expired. Please sign in again.", "error");
+        return;
+      }
       if (!data?.success) {
         showMessage(data?.message || "Failed to save grade", "error");
         return;
@@ -150,7 +149,7 @@ export default function QuizReviewPage() {
 
   return (
     <TokenGuard
-      redirectTo="/login"
+      redirectInfo="/login"
       onExpire={() =>
         showMessage("Session expired. Please sign in again.", "error")
       }

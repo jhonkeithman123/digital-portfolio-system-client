@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { apiFetch } from "./utils/apiClient.js";
 import MessageContainer from "./components/MessageContainer.jsx";
 import Home from "./pages/Home/Home";
 import Login from "./pages/Login/Login";
@@ -15,34 +16,29 @@ import Dashboard from "./pages/Dashboard/Dashboard.jsx";
 import NotFound from "./pages/NotFound/NotFound.jsx";
 import JoinClassroom from "./pages/classrooms/JoinClassroom.jsx";
 import CreateClassroom from "./pages/classrooms/CreateClassroom.jsx";
-import QuizCreate from "./pages/Home/section-pages/QuizCreate.jsx";
-import QuizEditPage from "./pages/Home/section-pages/quiz-edit.jsx";
-import QuizTakePage from "./pages/Home/section-pages/quiz-take.jsx";
-import QuizReviewPage from "./pages/Home/section-pages/quiz-review.jsx";
+import QuizCreate from "./pages/Home/section-pages/quiz/QuizCreate.jsx";
+import QuizEditPage from "./pages/Home/section-pages/quiz/quiz-edit.jsx";
+import QuizTakePage from "./pages/Home/section-pages/quiz/quiz-take.jsx";
+import QuizReviewPage from "./pages/Home/section-pages/quiz/quiz-review.jsx";
 
 const ProtectedRoute = ({ children, showMessage }) => {
   const [authorized, setAuthorized] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      showMessage("Unauthorize access", "error");
-      setAuthorized(false);
-    } else {
-      setAuthorized(true);
-    }
-
-    window.addEventListener("securitypolicyviolation", (e) => {
-      fetch("/csp-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          directive: e.violatedDirective,
-          blockedURI: e.blockedURI,
-          originalPolicy: e.originalPolicy,
-        }),
-      });
-    });
+    let mounted = true;
+    (async () => {
+      const { unauthorized, data } = await apiFetch("/auth/session");
+      if (!mounted) return;
+      if (unauthorized || !data?.success) {
+        showMessage("Unauthorized access", "error");
+        setAuthorized(false);
+      } else {
+        setAuthorized(true);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, [showMessage]);
 
   if (authorized === null) return null;
@@ -87,11 +83,11 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot" element={<ForgotPassword />} />
           <Route
-            path="/quizes/:classCode/quizzes/:quizId"
+            path="/quizzes/:classCode/quizzes/:quizId"
             element={<QuizTakePage />}
           />
           <Route
-            path="/quizes/:classCode/quizzes/:quizId/review"
+            path="/quizzes/:classCode/quizzes/:quizId/review"
             element={<QuizReviewPage />}
           />
           <Route
@@ -127,7 +123,7 @@ function App() {
             }
           />
           <Route
-            path="/quizes/:code/create"
+            path="/quizzes/:code/create"
             element={
               <ProtectedRoute showMessage={showMessage}>
                 <QuizCreate />
@@ -135,7 +131,7 @@ function App() {
             }
           />
           <Route
-            path="/quizes/:classCode/quizzes/:quizId/edit"
+            path="/quizzes/:classCode/quizzes/:quizId/edit"
             element={
               <ProtectedRoute showMessage={showMessage}>
                 <QuizEditPage />
