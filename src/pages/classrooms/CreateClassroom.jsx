@@ -12,14 +12,19 @@ const CreateClassroom = () => {
 
   const [name, setName] = useState("");
   const [schoolYear, setSchoolYear] = useState("");
+  const [section, setSection] = useState("");
   const { messageComponent, showMessage } = useMessage();
 
   const handleCreate = () => {
-    if (!name || !schoolYear)
+    if (!name || !schoolYear) {
       return showMessage("Please fill all fields.", "error");
+    }
+    const payload = { name, schoolYear };
+    if (section.trim()) payload.section = section.trim();
+
     apiFetch(`/classrooms/create`, {
       method: "POST",
-      body: JSON.stringify({ name, schoolYear }),
+      body: JSON.stringify({ payload }),
     })
       .then(({ data, unauthorized }) => {
         if (unauthorized)
@@ -59,6 +64,13 @@ const CreateClassroom = () => {
             value={schoolYear}
             onChange={(e) => setSchoolYear(e.target.value)}
             placeholder="School Year (e.g. 2025-2026)"
+          />
+          <input
+            className="create-input"
+            type="text"
+            value={section}
+            onChange={(e) => setSection(e.target.value)}
+            placeholder="Section (e.g. STEM-2)"
           />
           <button className="create-button" onClick={handleCreate}>
             Create Classroom

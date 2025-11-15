@@ -4,6 +4,7 @@ import "./Dashboard.css";
 import useTamperGuard from "../../security/useTamperGuard";
 import useMessage from "../../hooks/useMessage";
 import useLogout from "../../hooks/useLogout";
+import useConfirm from "../../hooks/useConfirm";
 import BurgerMenu from "../../components/burger_menu";
 import StudentInvite from "../../components/StudentInvite";
 import NotificationMenu from "../../components/NotificationMenu";
@@ -19,6 +20,7 @@ const roleColors = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [logout, LogoutModal] = useLogout();
+  const [confirm, ConfirmModal] = useConfirm();
 
   // For safegurading the useEffects to prevent infinite loops
   const didInit = useRef(false);
@@ -37,6 +39,7 @@ const Dashboard = () => {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [classroomSectionDraft, setClassroomSectionDraft] = useState("");
 
   const [showSections, setShowSections] = useState(false);
   const [students, setStudents] = useState([]);
@@ -241,6 +244,53 @@ const Dashboard = () => {
     }
   };
 
+  const saveClassroomSection = async () => {
+    const value = classroomSectionDraft.trim();
+    const code = classroomInfo?.code || null;
+
+    if (!value) return;
+    try {
+      const { data } = await apiFetch("/classrooms/teacher/section", {
+        method: "PATCH",
+        body: JSON.stringify({ section: value, code }),
+      });
+      if (!data?.success) throw new Error();
+      setClassroomInfo((c) => ({ ...(c || {}), section: value }));
+      setClassroomSectionDraft("");
+      showMessage("Classroom section set", "success");
+    } catch (e) {
+      console.log("Failed to set classroom section:", e);
+      showMessage("Failed to set classroom section", "error");
+    }
+  };
+
+  const clearClassroomSection = async () => {
+    const ok = await confirm({
+      title: "Clear Section",
+      message: "This will clear the section of the classroom",
+      confirmText: "Clear",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
+
+    try {
+      const code = classroomInfo?.code || null;
+      const { data } = await apiFetch("/classrooms/teacher/section", {
+        method: "PATCH",
+        body: JSON.stringify({ section: null, code }),
+      });
+      if (!data?.success) throw new Error();
+      setClassroomInfo((c) => ({
+        ...(c || {}),
+        section: data.section ?? null,
+      }));
+      showMessage("Classroom section cleared", "success");
+    } catch (err) {
+      console.error("Failed to clear classroom:", err);
+      showMessage(err?.error || "Failed to clear classroom section", "error");
+    }
+  };
+
   //* Quizzes effect
   useEffect(() => {
     if (user?.role !== "student" || !classroomInfo?.code) return;
@@ -310,6 +360,8 @@ const Dashboard = () => {
         classroomInfo={classroomInfo}
         showMessage={showMessage}
       />
+
+      <ConfirmModal />
 
       <div
         className="notification-icon"
@@ -403,6 +455,38 @@ const Dashboard = () => {
                 Only students without a section are editable. Others are grayed
                 out.
               </p>
+
+              <div className="classroom-section-row">
+                <strong>Advisory Classroom Section:</strong>
+                {classroomInfo?.section ? (
+                  <>
+                    <span className="fixed-value">{classroomInfo.section}</span>
+                    <button
+                      className="dashboard-button btn-small btn-danger"
+                      onClick={clearClassroomSection}
+                    >
+                      Clear
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      className="section-input"
+                      placeholder="Set classroom section"
+                      value={classroomSectionDraft}
+                      onChange={(e) => setClassroomSectionDraft(e.target.value)}
+                    />
+                    <button
+                      className="dashboard-button btn-small"
+                      disabled={!classroomSectionDraft.trim()}
+                      onClick={saveClassroomSection}
+                    >
+                      Save
+                    </button>
+                  </>
+                )}
+              </div>
+
               {loadingStudents ? (
                 <p>Loading students…</p>
               ) : students.length === 0 ? (
