@@ -4,21 +4,21 @@ import useMessage from "../../hooks/useMessage";
 import Submissions from "./sections/Submissions";
 import Quizzes from "./sections/Quizzes";
 import FileUpload from "./sections/Upload";
-import "./Home.css";
+import Header from "../../components/Header";
 import useLogout from "../../hooks/useLogout";
 import TokenGuard from "../../components/auth/tokenGuard";
 import { apiFetch } from "../../utils/apiClient.js";
+import "./Home.css";
 
 const Home = () => {
   const navigate = useNavigate();
   const [logout, LogoutModal] = useLogout();
   const didInit = useRef(false);
 
-  const displayName = (u) => u?.name || u?.username || "(No Name)";
-
   const [role, setRole] = useState("");
   const [user, setUser] = useState(null);
-  const [file, setFile] = useState(null);
+  const [classroomInfo, setClassroomInfo] = useState(null);
+  const [loadingClassroom, setLoadingClassroom] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [submissions] = useState([]);
@@ -55,55 +55,42 @@ const Home = () => {
     })();
   }, [navigate, showMessage]);
 
-  //* Will be enabled later
-  // useEffect(() => {
-  //     const fetchSubmissions = async () => {
-  //         const token = localStorage.getItem('token');
-  //         try {
-  //             const response = await fetch(`${reactAppUrl}/submissions`, {
-  //                 headers: { Authorization: `Bearer ${token}` }
-  //             });
-  //             const data = await response.json();
-  //             if (data.success) {
-  //                 setSubmissions(data.submissions);
-  //             }
-  //         } catch (error) {
-  //             showMessage("Failed to fetch submissions", "error");
-  //         }
-  //     };
+  // Fetch teacher classroom code after user loaded
+  useEffect(() => {
+    if (!user || user.role !== "teacher") return;
 
-  //     if (user) {
-  //         fetchSubmissions();
-  //     }
-  // }, [user, reactAppUrl, showMessage]);
+    let ignore = false;
+    const loadClassroom = async () => {
+      setLoadingClassroom(true);
 
-  const handleFileChange = (e) => {
-    const selected = e.target.files[0];
-    if (!selected) return;
-    setFile(selected);
-  };
-
-  const handleUpload = () => {
-    if (!file) return showMessage("Please select a file", "error");
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("role", role);
-
-    apiFetch(`/home/upload`, {
-      method: "POST",
-      body: formData,
-    })
-      .then(({ data }) => {
-        if (data.success) {
-          showMessage("File uploaded successfully!", "success");
-          setFile(null);
-        } else {
-          showMessage(data.error || "Upload failed", "error");
+      try {
+        const { data } = await apiFetch("/classrooms/teacher");
+        if (!ignore) {
+          if (data?.success && data.created) {
+            setClassroomInfo({
+              id: data.classroomId,
+              code: data.code,
+              name: data.name,
+              section: data.section ?? null,
+            });
+          } else {
+            showMessage("No classroom created yet.", "info");
+          }
         }
-      })
-      .catch(() => showMessage("Server error", "error"));
-  };
+      } catch (e) {
+        console.error("Error loading classroom:", e);
+        if (!ignore) showMessage("Failed to load classroom", "error");
+      } finally {
+        if (!ignore) setLoadingClassroom(false);
+      }
+    };
+    loadClassroom();
+    return () => {
+      ignore = true;
+    };
+  }, [user]);
+
+  //* Will be enabled later
 
   if (!user) return null;
 
@@ -117,27 +104,28 @@ const Home = () => {
       {messageComponent}
 
       <div className="home-container">
-        <header className="home-header">
-          <div className="home-welcome">
-            <h1>Welcome, {displayName(user)}</h1>
-            <span className={`role-badge ${user.role}`} data-role={user.role}>
-              {user.role}
-              {user.role === "student" && user.section && (
-                <span className="role-sub"> • {user.section}</span>
-              )}
-            </span>
-          </div>
-        </header>
+        <Header
+          variant="authed"
+          user={user}
+          section={user.role === "student" ? user.section : null}
+          headerClass="home-header"
+          welcomeClass="home-welcome"
+        />
 
         <main className="home-main">
           {role === "teacher" ? (
-            <FileUpload
-              role={role}
-              file={file}
-              onFileChange={handleFileChange}
-              onUpload={handleUpload}
-              showMessage={showMessage}
-            />
+            loadingClassroom ? (
+              <section className="home-card">
+                <h2>Upload Activity</h2>
+                <p>Loading Classroom...</p>
+              </section>
+            ) : (
+              <FileUpload
+                role={role}
+                showMessage={showMessage}
+                classroomCode={classroomInfo?.code}
+              />
+            )
           ) : (
             <section className="home-card empty-upload">
               <h2>Recent Activity</h2>

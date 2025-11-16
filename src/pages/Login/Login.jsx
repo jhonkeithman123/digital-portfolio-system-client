@@ -97,20 +97,21 @@ const Login = () => {
 
   return (
     <>
-      <Header />
+      <Header
+        variant="public"
+        subtitle={role ? `Login as ${role.toUpperCase()}` : "Login"}
+        leftActions={
+          <button onClick={() => navigate("/")} className="header-link">
+            ← Back
+          </button>
+        }
+      />
       <div className="backgroundL"></div>
       <div className="overlayL"></div>
 
       {messageComponent}
 
-      <button onClick={() => navigate("/")} className="backL">
-        ← Back
-      </button>
-
       <form className="containerL" onSubmit={handleSubmit}>
-        <h1 className="title">
-          Login as {role ? role.toUpperCase() : "GUEST"}
-        </h1>
         <div className="input-container">
           <InputField
             label="Email"

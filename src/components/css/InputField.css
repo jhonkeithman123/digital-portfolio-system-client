@@ -57,6 +57,7 @@
 }
 
 .fi-label {
+  margin-top: 10px;
   font-size: calc(var(--fi-font) * 0.85);
   font-weight: 700;
   letter-spacing: 0.4px;

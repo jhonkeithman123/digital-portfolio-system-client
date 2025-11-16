@@ -2,11 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import useMessage from "../../hooks/useMessage";
-import "./ForgotPassword.css";
 import InputField from "../../components/InputField";
 import { apiFetchPublic } from "../../utils/apiClient.js";
-
-const reactAppUrl = process.env.REACT_APP_API_URL;
+import "./ForgotPassword.css";
 
 const ForgotPassword = () => {
   const [code, setCode] = useState("");
@@ -14,7 +12,6 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [retryPassword, setRetryPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const role = localStorage.getItem("role");
@@ -37,10 +34,6 @@ const ForgotPassword = () => {
 
   const handleSelect = (page = "login") => {
     navigate(`/${page}`);
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev);
   };
 
   const isValidEmail = (email) => {
@@ -167,21 +160,24 @@ const ForgotPassword = () => {
 
   return (
     <>
-      <Header />
+      <Header
+        variant="public"
+        subtitle={
+          role ? `Forgot Password as ${role.toUpperCase()}` : "Forgot Password"
+        }
+        leftActions={
+          <button onClick={() => navigate("/")} className="header-link">
+            ← Back
+          </button>
+        }
+      />
 
       {messageComponent}
 
       <div className="backgroundF"></div>
       <div className="overlayF"></div>
 
-      <button onClick={() => navigate("/")} className="backF">
-        ← Back
-      </button>
-
       <div className="containerF">
-        <h1 className="title">
-          Forgot Password as {role ? role.toUpperCase() : "GUEST"}
-        </h1>
         {step === "verify" && (
           <form className="input-container" onSubmit={handleForgotSubmit}>
             <InputField

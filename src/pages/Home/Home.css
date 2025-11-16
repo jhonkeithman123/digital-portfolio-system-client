@@ -1,9 +1,48 @@
+/* Smooth + stable scrollbars */
+html {
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable both-edges;
+}
+
 /** Universal Styles */
 :root {
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.2);
   --transition-standard: all 0.5s ease;
+  --scroll-track: rgba(0, 0, 0, 0.06);
+  --scroll-thumb: color-mix(in oklab, var(--accent-color) 80%, white);
+  --scroll-thumb-hover: color-mix(in oklab, var(--accent-color) 95%, white);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+
+/* Webkit (Chrome/Edge/Safari) */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--scroll-thumb), var(--accent-color));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    var(--scroll-thumb-hover),
+    var(--accent-color)
+  );
 }
 
 /** Layout Components */
@@ -29,6 +68,8 @@
   width: 80%;
   max-width: 60svh;
   margin-bottom: 2rem;
+  scroll-snap-align: start;
+  scroll-snap-type: y proximity;
 }
 
 /** Header Component */
@@ -150,6 +191,14 @@
   font-size: 1rem;
   font-style: italic;
   margin-top: 1rem;
+}
+
+.activity-list {
+  margin-top: 18px;
+  max-height: 360px;
+  overflow: auto;
+  scroll-behavior: smooth;
+  padding-right: 4px; /* room for thumb */
 }
 
 /** File Preview Component */

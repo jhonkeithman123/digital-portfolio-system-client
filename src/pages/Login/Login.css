@@ -1,146 +1,128 @@
 .containerL {
-    display: flex;
-    flex: 1;
-    position: relative;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
-    box-sizing: border-box;
-    z-index: 1;
+  display: flex;
+  flex: 1;
+  position: relative;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0;
+  width: 100%;
+  height: 95%;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+  box-sizing: border-box;
+  z-index: 1;
 }
 
 .backgroundL {
-    display: flex;
-    position: fixed;
-    padding: 0;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url("/public/classroom.jpg");
-    background-size: cover;
-    background-position: center;
-    filter: blur(8px);
-    z-index: -2;
+  display: flex;
+  position: fixed;
+  padding: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("/public/classroom.jpg");
+  background-size: cover;
+  background-position: center;
+  filter: blur(8px);
+  z-index: -2;
 }
 
 .overlayL {
-    display: flex;
-    position: absolute;
-    flex: 1;
-    top: 0;
-    left: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.3);
-    z-index: 0;
-}
-
-.backL {
-    position: absolute;
-    background: none;
-    background-color: rgba(255, 255, 255, 0);
-    border: none;
-    color: #007bff;
-    font-size: 2.5rem;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    cursor: pointer;
-    z-index: 2;
-    margin: 1rem;
-}
-
-.backL:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  display: flex;
+  position: absolute;
+  flex: 1;
+  top: 0;
+  left: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.3);
+  z-index: 0;
 }
 
 .input-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    background-color: rgba(189, 189, 189, 0.168);
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin: 1.2rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background-color: rgba(189, 189, 189, 0.168);
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 1.2rem;
 }
 
 label {
-    font-size: 2rem;
-    color: black;
-    font-weight: bold;
+  font-size: 2rem;
+  color: black;
+  font-weight: bold;
 }
 
 .password-wrapper {
-    position: relative;
+  position: relative;
 }
 
 .inputL {
-    padding: 0.75rem;
-    margin-bottom: 1rem;
-    margin: 1rem;
-    font-size: 1rem;
-    width: 35svw;
-    height: 2.2svh;
-    border-radius: 5px;
-    cursor: text;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  margin: 1rem;
+  font-size: 1rem;
+  width: 35svw;
+  height: 2.2svh;
+  border-radius: 5px;
+  cursor: text;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .toggle-icon {
-    position: absolute;
-    right: 2.5svw;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
+  position: absolute;
+  right: 2.5svw;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
 }
 
 .buttonContainerL {
-    display: flex;
-    flex-direction: column;
-    gap: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
 }
 
 .buttonL {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.7rem;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-bottom: 10px;
-    min-width: 25svw;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.7rem;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  min-width: 25svw;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .buttonL:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
 .buttonNBG {
-    background-color: rgba(205, 205, 205, 0);
-    border: none;
-    color: #007bff;
-    font-weight: bold;
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-    width: auto;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background-color: rgba(205, 205, 205, 0);
+  border: none;
+  color: #007bff;
+  font-weight: bold;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  width: auto;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .buttonNBG:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }

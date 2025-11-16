@@ -1,12 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import useMessage from "../../hooks/useMessage";
-import "./Signup.css";
 import { useEffect, useState } from "react";
 import InputField from "../../components/InputField";
 import { apiFetchPublic } from "../../utils/apiClient.js";
-
-const reactAppUrl = process.env.REACT_APP_API_URL;
+import "./Signup.css";
 
 const Signup = () => {
   const [username, setUsername] = useState("");
@@ -14,7 +12,6 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [section, setSection] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
 
   const { messageComponent, showMessage } = useMessage();
 
@@ -99,20 +96,21 @@ const Signup = () => {
 
   return (
     <>
-      <Header />
+      <Header
+        variant="public"
+        subtitle={role ? `Sign Up as ${role.toUpperCase()}` : "Sign Up"}
+        leftActions={
+          <button onClick={() => navigate("/")} className="header-link">
+            ← Back
+          </button>
+        }
+      />
       <div className="backgroundS"></div>
       <div className="overlayS"></div>
-
-      <button onClick={() => navigate("/")} className="backS">
-        ← Back
-      </button>
 
       {messageComponent}
 
       <form className="containerS" onSubmit={handleSubmit}>
-        <h1 className="title">
-          Sign Up as a {role ? role.toUpperCase() : "GUEST"}
-        </h1>
         <div className="input-containerS">
           <InputField
             label="Username"
@@ -126,7 +124,7 @@ const Signup = () => {
 
           {role === "student" && (
             <InputField
-              label="Section (optional)"
+              label="Section"
               name="section"
               value={section}
               onChange={(e) => setSection(e.target.value)}

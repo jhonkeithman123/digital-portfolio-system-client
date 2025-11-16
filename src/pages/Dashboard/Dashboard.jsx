@@ -8,6 +8,7 @@ import useConfirm from "../../hooks/useConfirm";
 import BurgerMenu from "../../components/burger_menu";
 import StudentInvite from "../../components/StudentInvite";
 import NotificationMenu from "../../components/NotificationMenu";
+import Header from "../../components/Header";
 import TokenGuard from "../../components/auth/tokenGuard";
 import InputField from "../../components/InputField";
 import { apiFetch } from "../../utils/apiClient";
@@ -389,25 +390,37 @@ const Dashboard = () => {
       )}
 
       <div className="dashboard">
-        <header className="dashboard-header">
-          <div className="dashboard-welcome">
-            <h1>Welcome, {displayName(user)}</h1>
-            <span className={`role-badge ${user.role}`} data-role={user.role}>
-              {user.role}
-              {user.role === "student"
-                ? (user.section || mySection) && (
-                    <span className="role-sub">
-                      {" "}
-                      • {user.section || mySection}
-                    </span>
-                  )
-                : classroomInfo?.section && (
-                    <span className="role-sub"> • {classroomInfo.section}</span>
-                  )}
-            </span>
-          </div>
-          <div className="header-actions">
-            {user.role === "teacher" && (
+        <Header
+          variant="authed"
+          user={user}
+          section={
+            user.role === "teacher"
+              ? classroomInfo?.section
+              : user.section || mySection
+          }
+          headerClass="dashboard-header"
+          welcomeClass="dashboard-welcome"
+          leftActions={
+            <div
+              className="notification-icon"
+              onClick={() => setShowNotifications((prev) => !prev)}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M12 2a7 7 0 0 0-7 7v4.5l-1.7 2.6a1 1 0 0 0 .8 1.6h16a1 1 0 0 0 .8-1.6L19 13.5V9a7 7 0 0 0-7-7zm0 20a2.5 2.5 0 0 0 2.5-2.5h-5A2.5 2.5 0 0 0 12 22z" />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="notification-badge">{unreadCount}</span>
+              )}
+            </div>
+          }
+          rightActions={
+            user.role === "teacher" && (
               <button
                 className={`pill-btn ${showSections ? "active" : ""}`}
                 aria-pressed={showSections}
@@ -416,9 +429,9 @@ const Dashboard = () => {
               >
                 {showSections ? "Hide Student Sections" : "Manage Sections"}
               </button>
-            )}
-          </div>
-        </header>
+            )
+          }
+        />
         <main className="dashboard-main">
           {/* Student self-serve section (only when null/empty) */}
           {user.role === "student" && !user.section && !mySection && (
