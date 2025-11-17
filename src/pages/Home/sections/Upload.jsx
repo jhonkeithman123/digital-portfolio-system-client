@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import "../Home.css";
 import { apiFetch } from "../../../utils/apiClient";
 
-const FileUpload = ({ role, classroomCode, showMessage }) => {
+const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
   const [file, setFile] = useState(null);
@@ -21,6 +21,16 @@ const FileUpload = ({ role, classroomCode, showMessage }) => {
   ];
   const maxSize = 5 * 1024 * 1024;
   const fmtDate = (d) => new Date(d).toLocaleDateString();
+  const dbg = (...args) => console.log("[Upload]", ...args);
+
+  const normalize = (list = []) =>
+    list.map((a) => ({
+      id: a.id ?? a._id ?? crypto.randomUUID(),
+      title: a.title ?? "",
+      instructions: a.instructions ?? "",
+      original_name: a.original_name ?? a.fileName ?? null,
+      created_at: a.created_at ?? a.createdAt ?? new Date().toISOString(),
+    }));
 
   const validateFile = (f) => {
     if (!f) return false;
@@ -39,33 +49,49 @@ const FileUpload = ({ role, classroomCode, showMessage }) => {
     if (validateFile(f)) setFile(f);
   };
 
-  // Fetch activities for this classroom (teacher student)
+  // fetch activities whenever classroomCode becomes available (student or teacher)
   useEffect(() => {
+    dbg("Upload effect: classroomCode=", classroomCode, "role=", role);
     if (!classroomCode) return;
-
     let ignore = false;
     const load = async () => {
       setLoadingActivities(true);
-
       try {
-        const { data } = await apiFetch(`/activity/classroom/${classroomCode}`);
+        // primary endpoint (adjust if your backend differs)
+        const path = `/activity/classroom/${encodeURIComponent(classroomCode)}`;
+        dbg("[Upload] fetching activities from", path);
+        const { data } = await apiFetch(path);
+        dbg("[Upload] activities response:", data);
         if (!ignore) {
-          if (data?.success) setActivities(data.activities || []);
-          else showMessage(data?.error || "Failed to load activities", "error");
+          if (data?.success) setActivities(normalize(data.activities || []));
+          else {
+            // fallback: try singular endpoint if needed
+            dbg("[Upload] primary failed, trying fallback");
+            const fb = await apiFetch(
+              `/activity/classroom/${encodeURIComponent(classroomCode)}`
+            );
+            dbg("[Upload] fallback response:", fb);
+            if (fb.data?.success)
+              setActivities(normalize(fb.data.activities || []));
+            else
+              showMessage(
+                data?.error || fb.data?.error || "Failed to load activities",
+                "error"
+              );
+          }
         }
       } catch (e) {
+        dbg("[Upload] fetch error:", e);
         if (!ignore) showMessage("Server error loading activities.", "error");
       } finally {
         if (!ignore) setLoadingActivities(false);
       }
     };
-
     load();
-
     return () => {
       ignore = true;
     };
-  }, [classroomCode]);
+  }, [classroomCode, role, showMessage]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -100,10 +126,17 @@ const FileUpload = ({ role, classroomCode, showMessage }) => {
 
   const handleSubmit = async () => {
     if (!canSubmit) {
+      dbg("Submit blocked. Reason:", disabledReason, {
+        classroomCode,
+        title,
+        instructions,
+        creating,
+      });
       showMessage(disabledReason || "Complete required fields", "error");
       return;
     }
     setCreating(true);
+    dbg("Submitting new activity", { title, instructions, hasFile: !!file });
     try {
       const fd = new FormData();
       fd.append("title", title.trim());
@@ -116,8 +149,10 @@ const FileUpload = ({ role, classroomCode, showMessage }) => {
         body: fd,
         form: true,
       });
+      dbg("Create response:", data);
 
       if (!data?.success) {
+        dbg("Create failed:", data?.error);
         showMessage(data?.error || "Failed to create activity.", "error");
       } else {
         showMessage("Activity created.", "success");
@@ -131,13 +166,26 @@ const FileUpload = ({ role, classroomCode, showMessage }) => {
           },
           ...prev,
         ]);
+        // Reload from server to match student view
+        try {
+          dbg("Reloading list after create");
+          const { data: reload } = await apiFetch(
+            `activity/classroom/${encodeURIComponent(classroomCode)}`
+          );
+          dbg("Reload response:", reload);
+          if (reload?.success) setActivities(normalize(reload.activities));
+        } catch (e) {
+          dbg("Reload failed:", e);
+        }
         setTitle("");
         setInstructions("");
         setFile(null);
       }
-    } catch {
+    } catch (e) {
+      dbg("Submit exception:", e);
       showMessage("Server error.", "error");
     } finally {
+      dbg("Submit finished");
       setCreating(false);
     }
   };
@@ -151,6 +199,7 @@ const FileUpload = ({ role, classroomCode, showMessage }) => {
     >
       <section className="home-card">
         <h2>{role === "teacher" ? "Upload Activity" : "Activities"}</h2>
+        {loadingOuter && <p>Loading classroom...</p>}
 
         {role === "teacher" ? (
           <>

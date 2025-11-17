@@ -51,7 +51,6 @@ const Dashboard = () => {
   const [savingMySection, setSavingMySection] = useState(false); // for students
 
   const { messageComponent, showMessage } = useMessage();
-  const displayName = (u) => u?.name || u?.username || "(No Name)";
 
   // Make showMessage stable for effects
   const showMsgRef = useRef(showMessage);
@@ -341,6 +340,8 @@ const Dashboard = () => {
     );
   }
 
+  const roleClass = user.role === "teacher" ? "teacher-role" : "student-role";
+
   const content = (
     <>
       {inviteOpen && (
@@ -398,8 +399,8 @@ const Dashboard = () => {
               ? classroomInfo?.section
               : user.section || mySection
           }
-          headerClass="dashboard-header"
-          welcomeClass="dashboard-welcome"
+          headerClass={`dashboard-header ${roleClass}`}
+          welcomeClass={`dashboard-welcome ${roleClass}`}
           leftActions={
             <div
               className="notification-icon"

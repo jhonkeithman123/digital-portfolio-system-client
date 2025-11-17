@@ -1,3 +1,4 @@
+import useTheme from "../hooks/useTheme";
 import "./css/Header.css";
 
 const Header = ({
@@ -15,6 +16,7 @@ const Header = ({
   sticky = true,
 }) => {
   const stickyClass = sticky ? "is-sticky" : "";
+  const { theme, toggleTheme } = useTheme();
 
   // Public/non-auth header (keeps existing look)
   if (variant === "public" || !user) {
@@ -29,27 +31,58 @@ const Header = ({
           <h1 className="public-title">{title}</h1>
           {subtitle && <div className="public-subtitle">{subtitle}</div>}
         </div>
-        <div className="header-right">{rightActions}</div>
+        <div className="header-right">
+          {rightActions}
+          <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
+        </div>
       </header>
     );
   }
 
   // Authed header
   const displayName = (u) => u?.name || u?.username || "(No Name)";
+  const roleClass = user?.role === "teacher" ? "teacher" : "student";
+
   return (
     <header
-      className={`${headerClass || "app-header"} responsive ${stickyClass}`}
+      className={`${
+        headerClass || "app-header"
+      } responsive ${stickyClass} ${roleClass}`}
     >
-      {leftActions}
+      <div className="header-left">{leftActions}</div>
+
       <div className={welcomeClass || "app-welcome"}>
         <h1>Welcome, {displayName(user)}</h1>
-        <span className={`role-badge ${user.role}`} data-role={user.role}>
+        <span className={`role-badge ${roleClass}`} data-role={user.role}>
           {user.role}
           {section && <span className="role-sub"> • {section}</span>}
         </span>
       </div>
-      <div className="header-actions">{rightActions}</div>
+
+      <div className="header-actions">
+        {rightActions}
+        <ThemeSwitch theme={theme} toggleTheme={toggleTheme} />
+      </div>
     </header>
+  );
+};
+
+const ThemeSwitch = ({ theme, toggleTheme }) => {
+  const isDark = theme === "dark";
+
+  return (
+    <button
+      type="button"
+      className={`theme-switch ${isDark ? "is-dark" : "is-light"}`}
+      onClick={toggleTheme}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      <span className="theme-switch-track">
+        <span className="theme-switch-thumb"></span>
+        <span className="theme-swtich-icon sun"></span>
+        <span className="theme-swtich-icon moon"></span>
+      </span>
+    </button>
   );
 };
 

@@ -25,6 +25,7 @@ const Home = () => {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
 
   const { messageComponent, showMessage } = useMessage();
+  const dbg = (...a) => console.debug("[Home]", ...a);
 
   useEffect(() => {
     if (didInit.current) return;
@@ -48,6 +49,7 @@ const Home = () => {
       if (data.user) {
         setUser(data.user);
         setRole(data.user.role || "");
+        dbg("Session user:", data.user);
         try {
           localStorage.setItem("user", JSON.stringify(data.user));
         } catch {}
@@ -90,9 +92,49 @@ const Home = () => {
     };
   }, [user]);
 
+  // Student classroom (uses enrolled flag)
+  useEffect(() => {
+    if (!user || user.role !== "student") return;
+    let ignore = false;
+    setLoadingClassroom(true);
+    (async () => {
+      try {
+        const { data } = await apiFetch("/classrooms/student");
+        dbg("[Home] student classroom resp:", data);
+        if (!ignore) {
+          // accept multiple possible response shapes: enrolled | joined | direct code
+          const hasCode = !!(data?.code || data?.classroomCode);
+          const allowed =
+            data?.success && (data.enrolled || data.joined || hasCode);
+          if (allowed) {
+            setClassroomInfo({
+              id: data.classroomId ?? data.id ?? null,
+              code: data.code ?? data.classroomCode ?? null,
+              name: data.name ?? null,
+            });
+            dbg("[Home] set classroomInfo for student:", {
+              code: data.code ?? data.classroomCode,
+            });
+          } else {
+            dbg("[Home] student classroom missing enrollment/code:", data);
+          }
+        }
+      } catch (e) {
+        dbg("[Home] student classroom fetch error:", e);
+      } finally {
+        if (!ignore) setLoadingClassroom(false);
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
+  }, [user]);
+
   //* Will be enabled later
 
   if (!user) return null;
+
+  const roleClass = user?.role === "teacher" ? "teacher-role" : "student-role";
 
   return (
     <TokenGuard
@@ -103,88 +145,77 @@ const Home = () => {
     >
       {messageComponent}
 
-      <div className="home-container">
-        <Header
-          variant="authed"
-          user={user}
-          section={user.role === "student" ? user.section : null}
-          headerClass="home-header"
-          welcomeClass="home-welcome"
-        />
-
-        <main className="home-main">
-          {role === "teacher" ? (
-            loadingClassroom ? (
-              <section className="home-card">
-                <h2>Upload Activity</h2>
-                <p>Loading Classroom...</p>
-              </section>
-            ) : (
-              <FileUpload
-                role={role}
-                showMessage={showMessage}
-                classroomCode={classroomInfo?.code}
-              />
-            )
-          ) : (
-            <section className="home-card empty-upload">
-              <h2>Recent Activity</h2>
-              <p>
-                No Uploaded activities yet. Wait for the teacher to upload one.
-              </p>
-            </section>
-          )}
-
-          <Quizzes role={role} />
-
-          <Submissions
-            role={role}
-            submissions={submissions}
-            selectedSubmission={selectedSubmission}
-            feedback={feedback}
-            isSaving={isSaving}
-            onSubmissionSelect={(e) => {
-              const selected = submissions.find((s) => s.id === e.target.value);
-              setSelectedSubmission(selected);
-              setFeedback(selected?.feedback || "");
-            }}
-            onFeedbackChange={(e) => setFeedback(e.target.value)}
-            onSaveFeedback={() => {
-              if (!selectedSubmission) return;
-              setIsSaving(true);
-              apiFetch(`/submission/${selectedSubmission.id}/feedback`, {
-                method: "POST",
-                body: JSON.stringify({ feedback }),
-              })
-                .then(({ data }) => {
-                  if (data.success) {
-                    showMessage("Feedback saved successfully!", "success");
-                  } else {
-                    showMessage("Failed to save feedback", "error");
-                  }
-                })
-                .catch(() => showMessage("Server error", "error"))
-                .finally(() => setIsSaving(false));
-            }}
+      <div className="auth-layout">
+        <div className="home-container">
+          <Header
+            variant="authed"
+            user={user}
+            section={user.role === "student" ? user.section : null}
+            headerClass={`home-header ${roleClass}`}
+            welcomeClass={`home-welcome ${roleClass}`}
           />
 
-          <section className="home-card">
-            <button
-              className="dashboard-button"
-              onClick={() => navigate("/dash")}
-            >
-              Back to Dashboard
-            </button>
-          </section>
-        </main>
+          <main className="home-main">
+            <FileUpload
+              role={role}
+              showMessage={showMessage}
+              classroomCode={classroomInfo?.code}
+              loadingOuter={loadingClassroom}
+            />
 
-        <footer className="home-footer">
-          <LogoutModal />
-          <button className="dashboard-button" onClick={logout}>
-            Logout
-          </button>
-          <div>@ 2025 Digital Portfolio System</div>
-        </footer>
+            <Quizzes role={role} />
+
+            <Submissions
+              role={role}
+              submissions={submissions}
+              selectedSubmission={selectedSubmission}
+              feedback={feedback}
+              isSaving={isSaving}
+              onSubmissionSelect={(e) => {
+                const selected = submissions.find(
+                  (s) => s.id === e.target.value
+                );
+                setSelectedSubmission(selected);
+                setFeedback(selected?.feedback || "");
+              }}
+              onFeedbackChange={(e) => setFeedback(e.target.value)}
+              onSaveFeedback={() => {
+                if (!selectedSubmission) return;
+                setIsSaving(true);
+                apiFetch(`/submission/${selectedSubmission.id}/feedback`, {
+                  method: "POST",
+                  body: JSON.stringify({ feedback }),
+                })
+                  .then(({ data }) => {
+                    if (data.success) {
+                      showMessage("Feedback saved successfully!", "success");
+                    } else {
+                      showMessage("Failed to save feedback", "error");
+                    }
+                  })
+                  .catch(() => showMessage("Server error", "error"))
+                  .finally(() => setIsSaving(false));
+              }}
+            />
+
+            <section className="home-card">
+              <button
+                className="dashboard-button"
+                onClick={() => navigate("/dash")}
+              >
+                Back to Dashboard
+              </button>
+            </section>
+          </main>
+
+          <footer className="home-footer">
+            <LogoutModal />
+            <button className="dashboard-button" onClick={logout}>
+              Logout
+            </button>
+            <div>@ 2025 Digital Portfolio System</div>
+          </footer>
+        </div>
       </div>
     </TokenGuard>
   );

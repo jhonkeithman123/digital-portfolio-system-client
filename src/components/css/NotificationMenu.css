@@ -1,3 +1,19 @@
+:root {
+  --nm-bg: rgba(255, 255, 255, 0.35);
+  --nm-border: rgba(255, 255, 255, 0.55);
+  --nm-shadow: 0 10px 36px rgba(0, 0, 0, 0.35);
+  --nm-text: #0f172a;
+  --nm-link: #0f172a;
+}
+
+:root[data-theme="dark"] {
+  --nm-bg: rgba(15, 23, 42, 0.9);
+  --nm-border: rgba(148, 163, 184, 0.7);
+  --nm-shadow: 0 16px 42px rgba(0, 0, 0, 0.8);
+  --nm-text: #e5e7eb;
+  --nm-link: #bfdbfe;
+}
+
 .notification-menu {
   position: fixed; /* anchor to viewport (bell is fixed at left) */
   top: 15vh;
@@ -8,13 +24,10 @@
   border-radius: 16px;
   z-index: 9999;
 
-  background: rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: var(--nm-bg);
+  border: 1px solid var(--nm-border);
   outline: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  box-shadow: var(--nm-shadow), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
 
   overflow: visible;
 
@@ -66,7 +79,7 @@
   margin: 0 0 0.5rem;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--nm-text);
 }
 
 .notification-menu ul {
@@ -193,8 +206,9 @@
 .nm-title {
   margin: 0;
   font: 600 16px/1.2 system-ui, "Segoe UI", Arial, sans-serif;
-  color: #0f172a;
+  color: var(--nm-text);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  cursor: default;
 }
 
 .nm-close {
@@ -278,7 +292,7 @@
 
 .nm-link {
   grid-column: 2 / -1;
-  color: #0f172a;
+  color: var(--nm-text);
   text-decoration: none;
   font-size: 14px;
   line-height: 1.35;
@@ -288,7 +302,7 @@
 .nm-time {
   grid-column: 2 / -1;
   font-size: 12px;
-  color: #475569;
+  color: #94a3b8;
   opacity: 0.9;
 }
 
@@ -329,9 +343,6 @@
     backdrop-filter: blur(10px),
   )
 ) {
-  .notification-menu {
-    background: #fffffff2;
-  }
 }
 
 /* Keyframes */

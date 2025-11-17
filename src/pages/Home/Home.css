@@ -1,86 +1,191 @@
-/* Smooth + stable scrollbars */
-html {
-  scroll-behavior: smooth;
-  scrollbar-gutter: stable both-edges;
+/** For the light and dark mode*/
+.auth-layout {
+  min-height: 100vh;
+  background-color: var(--background-color);
+  color: var(--text-color);
 }
 
-/** Universal Styles */
-:root {
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.2);
-  --transition-standard: all 0.5s ease;
-  --scroll-track: rgba(0, 0, 0, 0.06);
-  --scroll-thumb: color-mix(in oklab, var(--accent-color) 80%, white);
-  --scroll-thumb-hover: color-mix(in oklab, var(--accent-color) 95%, white);
+.theme-toggle-container {
+  max-width: 1080px;
+  margin: 0.75rem auto 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px;
 }
 
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
-}
-
-/* Webkit (Chrome/Edge/Safari) */
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-*::-webkit-scrollbar-track {
-  background: var(--scroll-track);
+.theme-toggle {
+  padding: 8px 16px;
   border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.65);
+  background: radial-gradient(circle at top left, #ffffff, #e5e7eb);
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease,
+    border-color 0.15s ease;
 }
-*::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--scroll-thumb), var(--accent-color));
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.32);
 }
-*::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    var(--scroll-thumb-hover),
-    var(--accent-color)
-  );
+
+:root[data-theme="dark"] .theme-toggle {
+  background: radial-gradient(circle at top left, #1f2937, #020617);
+  color: #e5e7eb;
+  border-color: rgba(148, 163, 184, 0.9);
+}
+
+.empty-upload p,
+.file-types,
+.quiz-subtitle,
+.quiz-description,
+.quiz-meta,
+.status-indicator,
+.empty-state,
+.home-footer {
+  color: var(--muted-text);
 }
 
 /** Layout Components */
 .home-container {
-  background: var(--background-gradient);
-  color: #333;
+  background: transparent;
+  color: var(--text-color);
+  flex: 1;
+  height: 100%;
 }
 
 .home-main {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   margin-top: 2rem;
+  padding: 0 16px 2.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 2rem;
 }
 
 .home-card {
-  background-color: white;
-  border-left: 6px solid var(--accent-color);
-  box-shadow: var(--shadow-md);
-  border-radius: 10px;
-  padding: 1.5rem;
-  width: 80%;
-  max-width: 60svh;
-  margin-bottom: 2rem;
-  scroll-snap-align: start;
-  scroll-snap-type: y proximity;
+  position: relative;
+  background-color: var(--card-bg);
+  border-radius: 18px;
+  padding: 1.5rem 1.75rem;
+  width: 100%;
+  max-width: 1080px;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 0 0 1px var(--card-border), 0 18px 40px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+/* subtle inner glow */
+.home-card::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  opacity: 0.18;
+  background: radial-gradient(
+    circle at top left,
+    var(--accent-soft),
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+.home-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(37, 99, 235, 0.7),
+    rgba(56, 189, 248, 0.9),
+    transparent
+  );
+  opacity: 0.75;
 }
 
 /** Header Component */
 .home-header {
-  background-color: var(--accent-color);
+  background: linear-gradient(
+    135deg,
+    rgba(37, 99, 235, 0.95),
+    rgba(56, 189, 248, 0.95)
+  );
   color: white;
-  padding: 12px 20px;
+  padding: 14px 24px;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.35);
+}
+
+/* STUDENT: blue / cyan */
+.home-header .role-badge.student {
+  /* pill itself */
+  background: radial-gradient(
+        circle at 0% 0%,
+        rgba(255, 255, 255, 0.95),
+        transparent 70%
+      )
+      padding-box,
+    linear-gradient(135deg, #2563eb, #38bdf8) border-box;
+  color: #0f172a;
+}
+
+.home-header.student-role {
+  background: radial-gradient(
+      circle at -10% -10%,
+      rgba(248, 250, 252, 0.45),
+      transparent 55%
+    ),
+    linear-gradient(135deg, #2563eb, #38bdf8);
+}
+
+/* TEACHER: pink / coral */
+.home-header .role-badge.teacher {
+  background: radial-gradient(
+        circle at 0% 0%,
+        rgba(255, 255, 255, 0.95),
+        transparent 70%
+      )
+      padding-box,
+    linear-gradient(135deg, #ec4899, #fb7185) border-box;
+  color: #0f172a;
+}
+
+/* header variant for teacher */
+.home-header.teacher-role {
+  background: radial-gradient(
+      circle at -10% -10%,
+      rgba(248, 250, 252, 0.45),
+      transparent 55%
+    ),
+    linear-gradient(135deg, #ec4899, #fb7185);
+}
+
+/* Slightly softer in dark mode */
+:root[data-theme="dark"] .home-header.student-role {
+  background: radial-gradient(
+      circle at -10% -10%,
+      rgba(15, 23, 42, 0.9),
+      transparent 55%
+    ),
+    linear-gradient(135deg, #3b82f6, #22d3ee);
+}
+
+:root[data-theme="dark"] .home-header.teacher-role {
+  background: radial-gradient(
+      circle at -10% -10%,
+      rgba(15, 23, 42, 0.9),
+      transparent 55%
+    ),
+    linear-gradient(135deg, #f472b6, #fb7185);
 }
 
 .home-welcome {
@@ -91,12 +196,67 @@ html {
   border-radius: 18px;
   font-weight: 700;
   text-transform: capitalize;
-  background: linear-gradient(180deg, #ffffff, #f1f5f9);
-  color: var(--accent-color);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(255, 255, 255, 0.7) inset;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: linear-gradient(180deg, #ffffff, #e5f0ff);
+  color: #1d4ed8;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+:root[data-theme="dark"] .home-welcome {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.96),
+    rgba(30, 64, 175, 0.96)
+  );
+  color: #e5e7eb;
+}
+
+/* Role‑aware welcome pill */
+.home-welcome.student-role {
+  background: radial-gradient(
+        circle at 0% 0%,
+        rgba(255, 255, 255, 0.95),
+        transparent 70%
+      )
+      padding-box,
+    linear-gradient(180deg, #dbeafe, #eff6ff) border-box;
+  color: #1d4ed8;
+}
+
+.home-welcome.teacher-role {
+  background: radial-gradient(
+        circle at 0% 0%,
+        rgba(255, 255, 255, 0.95),
+        transparent 70%
+      )
+      padding-box,
+    linear-gradient(180deg, #ffe4f1, #fee2e2) border-box;
+  color: #be123c;
+}
+
+/* Dark‑mode variants: a bit deeper but still soft */
+:root[data-theme="dark"] .home-welcome.student-role {
+  background: radial-gradient(
+        circle at 0% 0%,
+        rgba(15, 23, 42, 0.96),
+        transparent 70%
+      )
+      padding-box,
+    linear-gradient(180deg, #1d4ed8, #0f172a) border-box;
+  color: #e5e7eb;
+}
+
+:root[data-theme="dark"] .home-welcome.teacher-role {
+  background: radial-gradient(
+        circle at 0% 0%,
+        rgba(15, 23, 42, 0.96),
+        transparent 70%
+      )
+      padding-box,
+    linear-gradient(180deg, #be185d, #0f172a) border-box;
+  color: #fee2e2;
 }
 
 .role-badge {
@@ -122,21 +282,25 @@ html {
 
 /** Upload Component */
 .upload-zone {
-  border: 2px dashed var(--accent-color);
-  border-radius: 12px;
-  padding: 2.5rem;
+  border: 1px dashed var(--accent-color);
+  border-radius: 14px;
+  padding: 2.3rem;
   text-align: center;
   transition: var(--transition-standard);
-  background-color: #fafafa;
+  background-color: var(--upload-bg);
   margin: 1.5rem 0;
   cursor: pointer;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.25);
 }
 
 .upload-zone.dragging {
-  border-color: #0056b3;
-  background-color: rgba(0, 123, 255, 0.05);
-  transform: scale(1.02);
-  box-shadow: var(--shadow-md);
+  border-color: #38bdf8;
+  background: radial-gradient(
+    circle at top,
+    rgba(56, 189, 248, 0.16),
+    transparent 65%
+  );
+  transform: translateY(-1px) scale(1.01);
 }
 
 .upload-icon {
@@ -204,10 +368,11 @@ html {
 /** File Preview Component */
 .file-preview {
   align-items: center;
-  background: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-  color: #444;
+  background: var(--card-bg);
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.32);
+  color: var(--text-color);
   display: flex;
   font-size: 0.9rem;
   justify-content: space-between;
@@ -240,12 +405,12 @@ html {
 .file-name {
   font-weight: 600;
   margin: 0;
-  color: #2c3e50;
+  color: var(--text-color);
   font-size: 1rem;
 }
 
 .file-size {
-  color: #666;
+  color: var(--muted-text);
   font-size: 0.85rem;
   margin: 0.25rem 0 0;
 }
@@ -292,9 +457,10 @@ html {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) inset;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-color);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25) inset;
 }
 
 .form-row textarea {
@@ -367,11 +533,13 @@ html {
 }
 
 .quiz-item {
-  background: #f8f9fa;
-  border-radius: 8px;
+  background: var(--card-bg);
+  border-radius: 10px;
   padding: 1.5rem;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+  border: var(--card-border);
+  color: var(--muted-text);
   transition: var(--transition-standard);
-  border: 1px solid #eee;
 }
 
 .quiz-item:hover {
@@ -482,15 +650,19 @@ html {
   margin-bottom: 1rem;
 }
 
+.submission-details,
+.submission-item {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+
 .submission-details {
-  background: #f8f9fa;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;
 }
 
 .submission-item {
-  background: white;
   border: 1px solid #eee;
   border-radius: 8px;
   padding: 1rem;
@@ -500,17 +672,17 @@ html {
 /** Feedback Component */
 .feedback-textarea {
   width: 95%;
-  height: 30vh;
   min-height: 18vh;
   font-size: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--card-border);
   margin-bottom: 1rem;
   resize: none;
   padding: 1rem;
   font-family: "Segoe UI", sans-serif;
-  border-radius: 8px;
-  background-color: #fdfdfd;
-  box-shadow: var(--shadow-sm);
+  border-radius: 10px;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
   transition: border-color 0.2s ease-in-out;
 }
 
@@ -538,11 +710,12 @@ html {
 /** Common Button Styles */
 .upload-button,
 .dashboard-button {
-  background-color: var(--accent-color);
+  background: linear-gradient(135deg, var(--accent-color));
   color: white;
   border: none;
   cursor: pointer;
   transition: var(--transition-standard);
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.55);
 }
 
 .upload-button {
@@ -557,7 +730,6 @@ html {
 
 .upload-button:not(.disabled):hover {
   background-color: #0056b3;
-  transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
@@ -569,8 +741,13 @@ html {
 
 .dashboard-button:hover {
   background-color: #666;
-  transform: scale(1.1);
   box-shadow: var(--shadow-lg);
+}
+
+.upload-button:not(.disabled):hover,
+.dashboard-button:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.75);
 }
 
 /** Utility Classes */
