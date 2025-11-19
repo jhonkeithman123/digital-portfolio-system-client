@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
 
-const THEME_KEY = "dps-theme";
+const STORAGE_KEY = "theme";
 
 export default function useTheme() {
   const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") return "light";
-    return localStorage.getItem(THEME_KEY) || "light";
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "light" || stored === "dark") return stored;
+
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
+      return "dark";
+    }
+    return "light";
   });
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem(THEME_KEY, theme);
+    localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
   const toggleTheme = () =>

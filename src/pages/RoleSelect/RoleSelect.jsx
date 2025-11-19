@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../../components/Header";
 import {
+  localStorageGet,
   localStorageRemove,
   localStorageSet,
 } from "../../utils/modifyFromLocalStorage";
@@ -22,11 +23,15 @@ const RoleSelect = () => {
 
   useEffect(() => {
     localStorageRemove({ keys: ["role"] });
+    const token = localStorageGet({ keys: ["token"] })[0];
+    if (!token) return;
 
     let cancelled = false;
     async function init() {
       try {
-        const { data } = await apiFetch("/auth/session");
+        const { data } = await apiFetch("/auth/session", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (data?.success) {
           localStorageRemove({ keys: ["role"] });
@@ -38,7 +43,7 @@ const RoleSelect = () => {
         }
       } catch (e) {
         if (cancelled) return;
-        localStorageRemove({ keys: ["user"] });
+        localStorageRemove({ keys: ["user", "token"] });
       }
     }
 

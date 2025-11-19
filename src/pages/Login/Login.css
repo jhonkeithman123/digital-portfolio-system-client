@@ -126,6 +126,23 @@
   color: var(--login-text);
 }
 
+.panelL input:-webkit-autofill,
+.panelL input:-webkit-autofill:hover,
+.panelL input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e6a459;
+  font-weight: bold;
+  transition: background-color 9999s ease-out, color 9999s ease-in-out;
+  box-shadow: 0 0 0px 1000px #020617 inset;
+}
+
+:root[data-theme="dark"] .panelL input:-webkit-autofill,
+:root[data-theme="dark"] .panelL input:-webkit-autofill:hover,
+:root[data-theme="dark"] .panelL input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #eb189a;
+  font-weight: bold;
+  box-shadow: 0 0 0px 1000px #ffffff inset;
+}
+
 .panelL input:focus,
 .panelL textarea:focus {
   outline: none;

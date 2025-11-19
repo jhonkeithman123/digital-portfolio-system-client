@@ -1,1 +1,80 @@
+import React, { useState } from "react";
+import PropTypes from "prop-types";
+import { apiFetch } from "../utils/apiClient";
+import useMessage from "../hooks/useMessage";
 import "./css/AnswerSubmission.css";
+
+const AnswerSubmission = ({ activityId, onSubmitted }) => {
+  const [text, setText] = useState("");
+  const [file, setFile] = useState(null);
+  const [sending, setSending] = useState(false);
+
+  const { messageComponent, showMessage } = useMessage();
+
+  const submit = async () => {
+    if (!text.trim() && !file) {
+      showMessage("Add an answer or attach a file.", "error");
+      return;
+    }
+    setSending(true);
+
+    try {
+      const fd = new FormData();
+      fd.append("text", text.trim());
+
+      if (file) fd.append("file", file);
+
+      const { data } = await apiFetch(
+        `/activity/${encodeURIComponent(activityId)}/submit`,
+        {
+          method: "POST",
+          body: fd,
+          form: true,
+        }
+      );
+
+      if (data?.success) {
+        setText("");
+        setFile(null);
+
+        if (onSubmitted) onSubmitted();
+        showMessage("Submitted", "success");
+      } else showMessage(data?.error || "Failed to submit", "error");
+    } catch (e) {
+      console.error("Submit error:", e);
+      showMessage("Server error", "error");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <>
+      {messageComponent}
+      <section className="answer-submission">
+        <h4>Submit your answer</h4>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Write your answer..."
+        ></textarea>
+        <input
+          type="text"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
+        <div className="actions">
+          <button onClick={submit} disabled={sending}>
+            {sending ? "Submitting..." : "Submit"}
+          </button>
+        </div>
+      </section>
+    </>
+  );
+};
+
+AnswerSubmission.proptypes = {
+  activityId: PropTypes.string.isRequired,
+  onSubmitted: PropTypes.func,
+};
+
+export default AnswerSubmission;

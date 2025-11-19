@@ -24,7 +24,7 @@ const Login = () => {
   const valid_roles = useMemo(() => ["student", "teacher"], []);
 
   useEffect(() => {
-    localStorageRemove({ keys: ["user", "currentClassroom"] });
+    localStorageRemove({ keys: ["token", "user", "currentClassroom"] });
 
     if (!role || !valid_roles.includes(role)) {
       localStorage.clear();
