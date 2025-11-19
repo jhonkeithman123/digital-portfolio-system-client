@@ -1,0 +1,46 @@
+@import "./ActivityBase.css";
+
+.answer-submission {
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-top: 18px;
+  background: var(--surface-elevated, #ffffff);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.answer-submission h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.answer-submission h4::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent, #2563eb);
+}
+
+.answer-submission textarea {
+  min-height: 110px;
+  margin-bottom: 10px;
+}
+
+.answer-submission input[type="file"],
+.answer-submission input[type="text"] {
+  width: 100%;
+  margin-bottom: 10px;
+  font-size: 0.86rem;
+  padding: 6px 4px;
+  border-radius: 10px;
+  border: 1px dashed rgba(148, 163, 184, 0.7);
+  background: var(--surface-input, #ffffff);
+  color: var(--text-primary, #0f172a);
+}
+
+.answer-submission .actions {
+  display: flex;
+  justify-content: flex-end;
+}

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import PropTypes from "prop-types";
 import { apiFetch } from "../utils/apiClient";
 import useMessage from "../hooks/useMessage";
 import "./css/AnswerSubmission.css";
+import TokenGuard from "./auth/tokenGuard";
 
 const AnswerSubmission = ({ activityId, onSubmitted }) => {
   const [text, setText] = useState("");
@@ -49,7 +50,13 @@ const AnswerSubmission = ({ activityId, onSubmitted }) => {
   };
 
   return (
-    <>
+    <TokenGuard
+      redirectInfo="/login"
+      onExpire={() => {
+        showMessage("Session expired. Please sign in again.", "error");
+      }}
+      loadingFallback={<div style={{ padding: 32 }}>Validation Session...</div>}
+    >
       {messageComponent}
       <section className="answer-submission">
         <h4>Submit your answer</h4>
@@ -68,7 +75,7 @@ const AnswerSubmission = ({ activityId, onSubmitted }) => {
           </button>
         </div>
       </section>
-    </>
+    </TokenGuard>
   );
 };
 

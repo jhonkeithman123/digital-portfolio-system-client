@@ -3,13 +3,14 @@ import PropTypes from "prop-types";
 import useMessage from "../hooks/useMessage";
 import { apiFetch } from "../utils/apiClient";
 import "./css/TeacherInstructions.css";
+import TokenGuard from "./auth/tokenGuard";
 
 /**
  ** Simple editor to update instructions on an existing activity.
  ** PATCH /activity/:id/instructions { instructions }
  */
 const TeacherInstructions = ({ activityId, currentInstructions, onSaved }) => {
-  const [text, setText] = useState("");
+  const [text, setText] = useState(currentInstructions || "");
   const [saving, setSaving] = useState(false);
 
   const { messageComponent, showMessage } = useMessage();
@@ -40,7 +41,13 @@ const TeacherInstructions = ({ activityId, currentInstructions, onSaved }) => {
   };
 
   return (
-    <>
+    <TokenGuard
+      redirectInfo="/login"
+      onExpire={() => {
+        showMessage("Session expired, please login again.", "error");
+      }}
+      loadingFallback={<div style={{ padding: 32 }}>Validation Session...</div>}
+    >
       {messageComponent}
       <section className="teacher-instructions">
         <h4>Teacher: Edit instructions</h4>
@@ -55,7 +62,7 @@ const TeacherInstructions = ({ activityId, currentInstructions, onSaved }) => {
           </button>
         </div>
       </section>
-    </>
+    </TokenGuard>
   );
 };
 

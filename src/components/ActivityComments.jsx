@@ -63,15 +63,12 @@ const ActivityComments = ({ activityId }) => {
       showMessage("Server error", "error");
     }
   };
-
-  const onExpire = useCallback(() => {
-    showMsgRef.current("Session expired. Please sign in again.", "error");
-  }, []);
-
   return (
     <TokenGuard
       redirectInfo="/login"
-      onExpire={onExpire}
+      onExpire={() => {
+        showMessage("Session expired. Please sign in again.", "error");
+      }}
       loadingFallback={<div style={{ padding: 32 }}>Validating Session...</div>}
     >
       <section className="activity-comments">
