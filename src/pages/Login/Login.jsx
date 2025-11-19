@@ -8,8 +8,8 @@ import {
   localStorageSet,
 } from "../../utils/modifyFromLocalStorage";
 import { apiFetchPublic } from "../../utils/apiClient.js";
-import "./Login.css";
 import InputField from "../../components/InputField";
+import "./Login.css";
 
 const Login = () => {
   const [user, setUser] = useState(null);
@@ -20,13 +20,11 @@ const Login = () => {
   const { messageComponent, showMessage } = useMessage();
 
   const role = localStorageGet({ keys: ["role"] })[0];
-
   const navigate = useNavigate();
-
   const valid_roles = useMemo(() => ["student", "teacher"], []);
 
   useEffect(() => {
-    localStorageRemove({ keys: ["token", "user", "currentClassroom"] });
+    localStorageRemove({ keys: ["user", "currentClassroom"] });
 
     if (!role || !valid_roles.includes(role)) {
       localStorage.clear();
@@ -95,64 +93,77 @@ const Login = () => {
     handleLogin();
   };
 
+  const bgUrl = `${process.env.PUBLIC_URL || ""}/classroom.jpg`;
+
   return (
     <>
       <Header
-        variant="public"
-        subtitle={role ? `Login as ${role.toUpperCase()}` : "Login"}
         leftActions={
           <button onClick={() => navigate("/")} className="header-link">
             ← Back
           </button>
         }
       />
-      <div className="backgroundL"></div>
-      <div className="overlayL"></div>
+      <div
+        className="backgroundL"
+        style={{ backgroundImage: `url(${bgUrl})` }}
+        aria-hidden="true"
+      />
+      <div className="overlayL" />
 
       {messageComponent}
 
-      <form className="containerL" onSubmit={handleSubmit}>
-        <div className="input-container">
-          <InputField
-            label="Email"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            placeholder="Email"
-            required
-          />
-          <InputField
-            label="Password"
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            placeholder="Password"
-            showToggle
-            required
-          />
-        </div>
-        <div className="buttonContainerL">
-          <button type="submit" className="buttonL">
-            Log in
-          </button>
-          <button
-            onClick={() => handleSelect("signup")}
-            type="button"
-            className="buttonL"
-          >
-            Sign up
-          </button>
-          <button
-            onClick={() => handleSelect("forgot")}
-            type="button"
-            className="buttonNBG"
-          >
-            Forgot Password?
-          </button>
+      <form className="containerL" onSubmit={handleSubmit} noValidate>
+        <div className="panelL" role="region" aria-labelledby="login-heading">
+          <h2 id="login-heading" className="panel-title">
+            Welcome back
+          </h2>
+          <p className="panel-sub">
+            {role ? `Continue as ${role}` : "Sign in to continue"}
+          </p>
+
+          <div className="input-container">
+            <InputField
+              label="Email"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              placeholder="Email"
+              required
+            />
+            <InputField
+              label="Password"
+              name="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Password"
+              showToggle
+              required
+            />
+          </div>
+          <div className="buttonContainerL">
+            <button type="submit" className="buttonL">
+              Log in
+            </button>
+            <button
+              onClick={() => handleSelect("signup")}
+              type="button"
+              className="buttonL"
+            >
+              Sign up
+            </button>
+            <button
+              onClick={() => handleSelect("forgot")}
+              type="button"
+              className="buttonNBG"
+            >
+              Forgot Password?
+            </button>
+          </div>
         </div>
       </form>
     </>

@@ -77,10 +77,15 @@ const ThemeSwitch = ({ theme, toggleTheme }) => {
       onClick={toggleTheme}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
-      <span className="theme-switch-track">
-        <span className="theme-switch-thumb"></span>
-        <span className="theme-swtich-icon sun"></span>
-        <span className="theme-swtich-icon moon"></span>
+      <span className="theme-switch-track" aria-hidden="true">
+        <span className="theme-switch-thumb" aria-hidden="true">
+          <span className="theme-switch-icon thumb-sun" aria-hidden="true">
+            <span className="icon-inner">☀</span>
+          </span>
+          <span className="theme-switch-icon thumb-moon" aria-hidden="true">
+            <span className="icon-inner">☾</span>
+          </span>
+        </span>
       </span>
     </button>
   );

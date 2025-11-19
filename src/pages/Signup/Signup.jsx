@@ -7,6 +7,8 @@ import { apiFetchPublic } from "../../utils/apiClient.js";
 import "./Signup.css";
 
 const Signup = () => {
+  const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,8 +19,7 @@ const Signup = () => {
 
   const role = localStorage.getItem("role");
   const validRoles = ["student", "teacher"];
-
-  const navigate = useNavigate();
+  const bgUrl = `${process.env.PUBLIC_URL || ""}/classroom.jpg`;
 
   useEffect(() => {
     if (!role || !validRoles.includes(role)) {
@@ -97,7 +98,6 @@ const Signup = () => {
   return (
     <>
       <Header
-        variant="public"
         subtitle={role ? `Sign Up as ${role.toUpperCase()}` : "Sign Up"}
         leftActions={
           <button onClick={() => navigate("/")} className="header-link">
@@ -105,7 +105,11 @@ const Signup = () => {
           </button>
         }
       />
-      <div className="backgroundS"></div>
+      <div
+        className="backgroundS"
+        style={{ backgroundImage: `url(${bgUrl})` }}
+        aria-hidden="true"
+      ></div>
       <div className="overlayS"></div>
 
       {messageComponent}
@@ -171,7 +175,10 @@ const Signup = () => {
           <button type="submit" className="buttonS">
             Sign up
           </button>
-          <button onClick={() => handleSelect()} className="buttonS">
+          <button
+            onClick={() => handleSelect()}
+            className="buttonS buttonS-secondary"
+          >
             Back to Log in
           </button>
         </div>

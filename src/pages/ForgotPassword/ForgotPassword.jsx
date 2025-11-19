@@ -7,6 +7,8 @@ import { apiFetchPublic } from "../../utils/apiClient.js";
 import "./ForgotPassword.css";
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
+
   const [code, setCode] = useState("");
   const [step, setStep] = useState("verify");
   const [email, setEmail] = useState("");
@@ -18,8 +20,7 @@ const ForgotPassword = () => {
   const validRoles = ["student", "teacher"];
 
   const { messageComponent, showMessage } = useMessage();
-
-  const navigate = useNavigate();
+  const bgUrl = `${process.env.PUBLIC_URL || ""}/classroom.jpg`;
 
   useEffect(() => {
     if (!role || !validRoles.includes(role)) {
@@ -174,12 +175,16 @@ const ForgotPassword = () => {
 
       {messageComponent}
 
-      <div className="backgroundF"></div>
-      <div className="overlayF"></div>
+      <div
+        className="fp-background"
+        style={{ backgroundImage: `url(${bgUrl})` }}
+        aria-hidden="true"
+      ></div>
+      <div className="fp-overlay"></div>
 
-      <div className="containerF">
+      <div className="fp-container">
         {step === "verify" && (
-          <form className="input-container" onSubmit={handleForgotSubmit}>
+          <form className="fp-card" onSubmit={handleForgotSubmit}>
             <InputField
               label="Email"
               name="email"
@@ -193,7 +198,7 @@ const ForgotPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`buttonF ${loading ? "disabled" : ""}`}
+              className={`fp-button ${loading ? "disabled" : ""}`}
             >
               Submit
             </button>
@@ -201,7 +206,7 @@ const ForgotPassword = () => {
         )}
 
         {step === "code" && (
-          <form className="input-container" onSubmit={handleCodeSubmit}>
+          <form className="fp-card" onSubmit={handleCodeSubmit}>
             <InputField
               label="Verification Code"
               name="code"
@@ -214,7 +219,7 @@ const ForgotPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`buttonF ${loading ? "disabled" : ""}`}
+              className={`fp-button ${loading ? "disabled" : ""}`}
             >
               Verify
             </button>
@@ -222,7 +227,7 @@ const ForgotPassword = () => {
         )}
 
         {step === "reset" && (
-          <form className="input-container" onSubmit={handleResetSubmit}>
+          <form className="fp-card" onSubmit={handleResetSubmit}>
             <InputField
               label="Reset Password"
               name="reset"
@@ -246,7 +251,7 @@ const ForgotPassword = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`buttonF ${loading ? "disabled" : ""}`}
+              className={`fp-button ${loading ? "disabled" : ""}`}
             >
               Reset
             </button>
@@ -254,12 +259,15 @@ const ForgotPassword = () => {
         )}
 
         {loading && (
-          <div className="overlay-spinner">
-            <div className="spinner"></div>
+          <div className="fp-overlay-spinner">
+            <div className="fp-spinner"></div>
           </div>
         )}
-        <div className="button-containerF">
-          <button onClick={() => handleSelect()} className="buttonF">
+        <div className="fp-button-row">
+          <button
+            onClick={() => handleSelect()}
+            className="fp-button fp-button-secondary"
+          >
             Back to Log in
           </button>
         </div>

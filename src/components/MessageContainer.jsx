@@ -26,13 +26,15 @@ const MessageContainer = ({
 
   return (
     <div className={`toast ${type} ${visible ? "slide-down" : "slide-up"}`}>
-      <span>{message}</span>
+      <span className="toast-text">{message}</span>
       <button
-        className="close-btn"
+        className="toast-close-btn"
+        type="button"
         onClick={() => {
           setVisible(false);
           if (onClose) onClose();
         }}
+        aria-label="Close notification"
       >
         x
       </button>
