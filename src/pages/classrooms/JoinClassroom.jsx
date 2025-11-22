@@ -7,22 +7,28 @@ import useLogout from "../../hooks/useLogout";
 
 import InvNotificationMenu from "./InvNotificationMenu";
 import TokenGuard from "../../components/auth/tokenGuard";
-import "./JoinClassroom.css";
-import "./InviteBell.css";
+import "./css/JoinClassroom.css";
+import "./css/InviteBell.css";
 
 const JoinClassroom = () => {
   const navigate = useNavigate();
   const [logout, LogoutModal] = useLogout();
+  const { messageComponent, showMessage } = useMessage();
 
   const [code, setCode] = useState("");
   const [invites, setInvites] = useState([]);
   const [inviteOpen, setInviteOpen] = useState(false);
+
+  const showMsgRef = useRef(showMessage);
   const bellRef = useRef(null);
 
-  const { messageComponent, showMessage } = useMessage();
   const visibleInvitesCount = invites.filter((inv) =>
     !inv.hidden && !inv.hidden === false ? true : !inv.hidden
   ).length;
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   useEffect(() => {
     apiFetch(`/classrooms/invites`)
@@ -40,14 +46,14 @@ const JoinClassroom = () => {
       })
       .catch((err) => {
         console.log("[JoinClassroom] failed to fetch invites:", err);
-        showMessage("Failed to fetch invites", "error");
+        showMsgRef.current("Failed to fetch invites", "error");
       });
-  }, [showMessage]);
+  }, []);
 
   const handleJoin = (joinCode) => {
     const useCode = joinCode || code;
     if (!useCode || useCode.length !== 10)
-      return showMessage(
+      return showMsgRef.current(
         "Please enter a valid 10-character classroom code.",
         "error"
       );
@@ -57,22 +63,30 @@ const JoinClassroom = () => {
     })
       .then(({ unauthorized, data }) => {
         if (unauthorized)
-          return showMessage("Session expired. Please sign in again.", "error");
+          return showMsgRef.current(
+            "Session expired. Please sign in again.",
+            "error"
+          );
         if (data?.success) {
-          showMessage("Successfully enrolled", "success");
+          showMsgRef.current("Successfully enrolled", "success");
           navigate("/dash");
         } else {
-          showMessage(data?.error || "Failed to join classroom", "error");
+          showMsgRef.current(
+            data?.error || "Failed to join classroom",
+            "error"
+          );
         }
       })
-      .catch(() => showMessage("Server error. Try again later.", "error"));
+      .catch(() =>
+        showMsgRef.current("Server error. Try again later.", "error")
+      );
   };
 
   return (
     <TokenGuard
       redirectInfo="/login"
       onExpire={() =>
-        showMessage("Session expired. Please sign in again.", "error")
+        showMsgRef.current("Session expired. Please sign in again.", "error")
       }
     >
       {messageComponent}

@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import useMessage from "../hooks/useMessage";
-import { apiFetch } from "../utils/apiClient";
+import useMessage from "../../hooks/useMessage";
+import { apiFetch } from "../../utils/apiClient";
 import "./css/TeacherInstructions.css";
-import TokenGuard from "./auth/tokenGuard";
+import TokenGuard from "../auth/tokenGuard";
 
 /**
  ** Simple editor to update instructions on an existing activity.
@@ -14,6 +14,12 @@ const TeacherInstructions = ({ activityId, currentInstructions, onSaved }) => {
   const [saving, setSaving] = useState(false);
 
   const { messageComponent, showMessage } = useMessage();
+
+  const showMsgRef = useRef(showMessage);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   const save = async () => {
     setSaving(true);
@@ -29,12 +35,12 @@ const TeacherInstructions = ({ activityId, currentInstructions, onSaved }) => {
       );
 
       if (data?.success) {
-        showMessage("Instructions updated", "success");
+        showMsgRef.current("Instructions updated", "success");
         if (onSaved) onSaved(text);
-      } else showMessage(data?.error || "Failed to save", "error");
+      } else showMsgRef.current(data?.error || "Failed to save", "error");
     } catch (e) {
       console.error("Save instr err", e);
-      showMessage("Server error", "error");
+      showMsgRef.current("Server error", "error");
     } finally {
       setSaving(false);
     }
@@ -44,7 +50,7 @@ const TeacherInstructions = ({ activityId, currentInstructions, onSaved }) => {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() => {
-        showMessage("Session expired, please login again.", "error");
+        showMsgRef.current("Session expired, please login again.", "error");
       }}
       loadingFallback={<div style={{ padding: 32 }}>Validation Session...</div>}
     >

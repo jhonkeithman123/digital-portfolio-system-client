@@ -1,33 +1,40 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import useMessage from "../hooks/useMessage";
 import { apiFetch } from "../utils/apiClient.js";
 import "./css/StudentInvite.css";
 
 const StudentInvite = ({ classroomCode, onClose, onInvite }) => {
+  const { messageComponent, showMessage } = useMessage();
+
+  const showMsgRef = useRef(showMessage);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [students, setStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [invitedIds, setInvitedIds] = useState([]);
-  const { messageComponent, showMessage } = useMessage();
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   useEffect(() => {
     setLoading(true);
     apiFetch(`/classrooms/${classroomCode}/students`)
       .then(({ data, unauthorized }) => {
         if (unauthorized) {
-          showMessage("Session expired. Please sign in.", "error");
+          showMsgRef.current("Session expired. Please sign in.", "error");
           return;
         }
         if (data?.success && Array.isArray(data.students)) {
           setStudents(data.students);
           setFilteredStudents(data.students);
         } else {
-          showMessage("Failed to fetch students", "error");
+          showMsgRef.current("Failed to fetch students", "error");
         }
       })
       .catch(() => {
-        showMessage("Failed to fetch students", "error");
+        showMsgRef.current("Failed to fetch students", "error");
       })
       .finally(() => setLoading(false));
   }, [classroomCode]);
@@ -52,7 +59,7 @@ const StudentInvite = ({ classroomCode, onClose, onInvite }) => {
         }
       );
       if (unauthorized) {
-        showMessage("Session expired. Please sign in.", "error");
+        showMsgRef.current("Session expired. Please sign in.", "error");
         return;
       }
       if (data?.success) {
@@ -62,10 +69,10 @@ const StudentInvite = ({ classroomCode, onClose, onInvite }) => {
         setInvitedIds((prev) => [...prev, studentId]);
         if (typeof onInvite === "function") onInvite(studentId);
       } else {
-        showMessage("Invite failed", "error");
+        showMsgRef.current("Invite failed", "error");
       }
     } catch (error) {
-      showMessage("Invite error", "error");
+      showMsgRef.current("Invite error", "error");
     }
   };
 

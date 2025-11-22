@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { apiFetch } from "../../../../utils/apiClient.js";
-import useMessage from "../../../../hooks/useMessage.jsx";
+import { apiFetch } from "../../utils/apiClient.js";
+import useMessage from "../../hooks/useMessage.jsx";
 import QuizEditor from "./quiz";
-import TokenGuard from "../../../../components/auth/tokenGuard.jsx";
+import TokenGuard from "../auth/tokenGuard.jsx";
 
 function toPagesFromServerQuestions(raw) {
   try {
@@ -19,10 +19,18 @@ function toPagesFromServerQuestions(raw) {
 
 export default function QuizEditPage() {
   const { classCode, quizId } = useParams();
-  const { messageComponent, showMessage } = useMessage();
+
   const navigate = useNavigate();
+  const { messageComponent, showMessage } = useMessage();
+
+  const showMsgRef = useRef(showMessage);
+
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState(null);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   useEffect(() => {
     let mounted = true;
@@ -32,13 +40,13 @@ export default function QuizEditPage() {
           `/quizzes/${classCode}/quizzes/${quizId}`
         );
         if (unauthorized) {
-          showMessage("Session expired. Please sign in again.", "error");
+          showMsgRef.current("Session expired. Please sign in again.", "error");
           navigate("/login");
           return;
         }
         if (!mounted) return;
         if (!data?.success) {
-          showMessage(data?.message || "Failed to load quiz", "error");
+          showMsgRef.current(data?.message || "Failed to load quiz", "error");
           navigate(`/quizzes/${classCode}/quizzes`);
           return;
         }
@@ -53,7 +61,7 @@ export default function QuizEditPage() {
         });
       } catch (e) {
         console.error("Failed to load quiz", e);
-        showMessage("Server error loading quiz", "error");
+        showMsgRef.current("Server error loading quiz", "error");
         navigate(`/quizzes/${classCode}/quizzes`);
       } finally {
         if (mounted) setLoading(false);
@@ -62,7 +70,7 @@ export default function QuizEditPage() {
     return () => {
       mounted = false;
     };
-  }, [classCode, quizId, navigate, showMessage]);
+  }, [classCode, quizId, navigate]);
 
   if (loading)
     return (
@@ -83,7 +91,7 @@ export default function QuizEditPage() {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() =>
-        showMessage("Session expired. Please sign in again.", "error")
+        showMsgRef.current("Session expired. Please sign in again.", "error")
       }
     >
       {messageComponent}

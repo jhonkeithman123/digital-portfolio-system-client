@@ -1,15 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { apiFetch } from "../utils/apiClient";
-import useMessage from "../hooks/useMessage";
+import { apiFetch } from "../../utils/apiClient";
+import useMessage from "../../hooks/useMessage";
 import "./css/ActivityComments.css";
-import TokenGuard from "./auth/tokenGuard";
+import TokenGuard from "../auth/tokenGuard";
 
 const ActivityComments = ({ activityId }) => {
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [messageComponent, showMessage] = useMessage();
+
+  const showMsgRef = useRef(showMessage);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   const load = async () => {
     setLoading(true);
@@ -56,21 +62,23 @@ const ActivityComments = ({ activityId }) => {
           ...p,
         ]);
       } else {
-        showMessage(data?.error || "Failed to post comment", "error");
+        showMsgRef.current(data?.error || "Failed to post comment", "error");
       }
     } catch (e) {
       console.error(e);
-      showMessage("Server error", "error");
+      showMsgRef.current("Server error", "error");
     }
   };
   return (
     <TokenGuard
       redirectInfo="/login"
       onExpire={() => {
-        showMessage("Session expired. Please sign in again.", "error");
+        showMsgRef.current("Session expired. Please sign in again.", "error");
       }}
       loadingFallback={<div style={{ padding: 32 }}>Validating Session...</div>}
     >
+      {messageComponent}
+
       <section className="activity-comments">
         <h4>Comments</h4>
         <div className="comment-form">

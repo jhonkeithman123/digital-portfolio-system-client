@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { apiFetch } from "../../../../utils/apiClient.js";
-import TokenGuard from "../../../../components/auth/tokenGuard.jsx";
-import useMessage from "../../../../hooks/useMessage.jsx";
-import useConfirm from "../../../../hooks/useConfirm.jsx";
+import { apiFetch } from "../../utils/apiClient.js";
+import TokenGuard from "../auth/tokenGuard.jsx";
+import useMessage from "../../hooks/useMessage.jsx";
+import useConfirm from "../../hooks/useConfirm.jsx";
 import "./css/quiz-take.css";
 
 function millisLeft(until) {
@@ -27,18 +27,21 @@ export default function QuizTakePage() {
   const [showDetails, setShowDetails] = useState(false);
   const [showWarning, setShowWarning] = useState(true);
   const [starting, setStarting] = useState(false);
-
   const [attemptId, setAttemptId] = useState(null);
   const [attemptNo, setAttemptNo] = useState(null);
   const [expiresAt, setExpiresAt] = useState(null);
-
   const [answers, setAnswers] = useState({}); // { questionId: value | [values] }
   const [currentPage, setCurrentPage] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const [timeLeftMs, setTimeLeftMs] = useState(null);
 
   const timerRef = useRef(null);
-  const [timeLeftMs, setTimeLeftMs] = useState(null);
+  const showMsgRef = useRef(showMessage);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   // Single quiz load on mount
   useEffect(() => {
@@ -53,7 +56,7 @@ export default function QuizTakePage() {
         );
         if (!mounted) return;
         if (unauthorized || !data?.success) {
-          showMessage?.(data?.message || "Failed to load quiz", "error");
+          showMsgRef.current?.(data?.message || "Failed to load quiz", "error");
           setLoading(false);
           return;
         }
@@ -75,7 +78,7 @@ export default function QuizTakePage() {
       } catch (err) {
         if (err.name !== "AbortError") {
           console.error("Load quiz error", err);
-          showMessage?.("Server error while loading quiz", "error");
+          showMsgRef.current?.("Server error while loading quiz", "error");
         }
       } finally {
         if (mounted) setLoading(false);
@@ -86,7 +89,7 @@ export default function QuizTakePage() {
       ac.abort();
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [classCode, quizId, showMessage]);
+  }, [classCode, quizId]);
 
   // fetch quiz metadata (extracted so we can re-run after a failed attempt)
   async function fetchQuiz() {
@@ -96,7 +99,7 @@ export default function QuizTakePage() {
         `/quizzes/${classCode}/quizzes/${quizId}`
       );
       if (unauthorized || !data?.success) {
-        showMessage(data?.message || "Failed to load quiz", "error");
+        showMsgRef.current(data?.message || "Failed to load quiz", "error");
         return;
       }
       const q = data.quiz;
@@ -117,7 +120,7 @@ export default function QuizTakePage() {
       setLastChecked(Date.now());
     } catch (err) {
       console.error("Load quiz error", err);
-      showMessage("Server error while loading quiz", "error");
+      showMsgRef.current("Server error while loading quiz", "error");
     } finally {
       setLoading(false);
     }
@@ -151,7 +154,7 @@ export default function QuizTakePage() {
         }
       );
       if (unauthorized || !data?.success) {
-        showMessage(data?.message || "Failed to start attempt", "error");
+        showMsgRef.current(data?.message || "Failed to start attempt", "error");
         await fetchQuiz();
         setStarting(false);
         return;
@@ -173,7 +176,7 @@ export default function QuizTakePage() {
           setTimeLeftMs(left);
           if (left <= 0) {
             clearInterval(timerRef.current);
-            showMessage("Time expired. Submitting attempt.", "info");
+            showMsgRef.current("Time expired. Submitting attempt.", "info");
             submitAttempt();
           }
         }, 500);
@@ -182,7 +185,7 @@ export default function QuizTakePage() {
       setCurrentPage(0);
     } catch (err) {
       console.error("Start attempt error", err);
-      showMessage("Server error while starting attempt", "error");
+      showMsgRef.current("Server error while starting attempt", "error");
     } finally {
       setStarting(false);
     }
@@ -212,7 +215,7 @@ export default function QuizTakePage() {
 
   async function submitAttempt() {
     if (!attemptId) {
-      showMessage("No active attempt", "error");
+      showMsgRef.current("No active attempt", "error");
       return;
     }
     setSubmitting(true);
@@ -223,15 +226,18 @@ export default function QuizTakePage() {
         { method: "POST", body: JSON.stringify(payload) }
       );
       if (unauthorized || !data?.success) {
-        showMessage(data?.message || "Failed to submit attempt", "error");
+        showMsgRef.current(
+          data?.message || "Failed to submit attempt",
+          "error"
+        );
       } else {
         setResult({ score: data.score });
-        showMessage("Attempt submitted", "success");
+        showMsgRef.current("Attempt submitted", "success");
         if (timerRef.current) clearInterval(timerRef.current);
       }
     } catch (err) {
       console.error("Submit attempt error", err);
-      showMessage("Server error while submitting attempt", "error");
+      showMsgRef.current("Server error while submitting attempt", "error");
     } finally {
       setSubmitting(false);
     }
@@ -266,7 +272,7 @@ export default function QuizTakePage() {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() =>
-        showMessage("Session expired. Please sign in again.", "error")
+        showMsgRef.current("Session expired. Please sign in again.", "error")
       }
     >
       {messageComponent}

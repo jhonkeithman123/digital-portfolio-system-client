@@ -5,35 +5,6 @@
   color: var(--text-color);
 }
 
-.dashboard-header .notification-icon {
-  position: absolute;
-}
-
-.notification-icon {
-  position: absolute;
-  top: 10.5vh;
-  left: 18px;
-  transform: none;
-  width: 50px;
-  height: 50px;
-  z-index: 40;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.96),
-    rgba(255, 255, 255, 0.88)
-  );
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 6px 18px rgba(11, 26, 40, 0.1),
-    0 1px 0 rgba(255, 255, 255, 0.6) inset;
-  cursor: pointer;
-  transition: transform 0.32s, box-shadow 0.12s, background 0.42s;
-  overflow: hidden;
-}
-
 /* icon styling inside the frame (svg elements) */
 .notification-icon svg,
 .svg svg,
@@ -44,38 +15,6 @@
   fill: currentColor;
   stroke: none;
   display: block;
-}
-
-/* hover / active */
-.notification-icon:hover {
-  transform: scale(1.05);
-  box-shadow: 0 10px 26px rgba(11, 26, 40, 0.14),
-    0 2px 0 rgba(255, 255, 255, 0.6) inset;
-  background: linear-gradient(180deg, #fff, #fafafa);
-}
-
-/* subtle focus for keyboard users */
-.notification-icon:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(77, 169, 255, 0.12),
-    0 6px 20px rgba(11, 26, 40, 0.12);
-}
-
-/* Add badge styles (you render notification-badge but had no CSS) */
-.notification-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 12px;
-  line-height: 18px;
-  text-align: center;
-  box-shadow: 0 0 0 2px #fff;
 }
 
 /* Header */

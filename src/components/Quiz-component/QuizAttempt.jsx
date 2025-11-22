@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { apiFetch } from "../../../../utils/apiClient.js";
+import { useEffect, useRef, useState } from "react";
+import { apiFetch } from "../../utils/apiClient.js";
 import QuizTimer from "../../components/QuizTimer";
-import useMessage from "../../../../hooks/useMessage.jsx";
-import TokenGuard from "../../../../components/auth/tokenGuard.jsx";
+import useMessage from "../../hooks/useMessage.jsx";
+import TokenGuard from "../auth/tokenGuard.jsx";
 
 export default function QuizAttempt({ classroomCode, quizId }) {
   const [quiz, setQuiz] = useState(null);
@@ -13,6 +13,11 @@ export default function QuizAttempt({ classroomCode, quizId }) {
   const [loading, setLoading] = useState(false);
 
   const { messageComponent, showMessage } = useMessage();
+  const showMsgRef = useRef(showMessage);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   useEffect(() => {
     async function load() {
@@ -20,7 +25,7 @@ export default function QuizAttempt({ classroomCode, quizId }) {
         `/quizzes/${classroomCode}/quizzes/${quizId}`
       );
       if (unauthorized) {
-        showMessage("Session expired. Please sign in again.", "error");
+        showMsgRef.current("Session expired. Please sign in again.", "error");
         return;
       }
       if (data?.success) {
@@ -33,7 +38,7 @@ export default function QuizAttempt({ classroomCode, quizId }) {
             : []);
         setQuiz({ ...data.quiz, pages });
       } else {
-        showMessage("Cannot load quiz");
+        showMsgRef.current("Cannot load quiz");
       }
     }
     load();
@@ -47,14 +52,14 @@ export default function QuizAttempt({ classroomCode, quizId }) {
     );
     setLoading(false);
     if (unauthorized) {
-      showMessage("Session expired. Please sign in again.", "error");
+      showMsgRef.current("Session expired. Please sign in again.", "error");
       return;
     }
     if (d.success) {
       setAttemptId(d.attemptId);
       setExpiresAt(d.expiresAt ? new Date(d.expiresAt) : null);
     } else {
-      showMessage(d.message || "Could not start attempt");
+      showMsgRef.current(d.message || "Could not start attempt");
     }
   }
 
@@ -68,14 +73,14 @@ export default function QuizAttempt({ classroomCode, quizId }) {
       { method: "POST", body: JSON.stringify({ attemptId, answers }) }
     );
     if (unauthorized) {
-      showMessage("Session expired. Please sign in again.", "error");
+      showMsgRef.current("Session expired. Please sign in again.", "error");
       return;
     }
     if (d.success) {
-      showMessage("Submitted. Score: " + d.score + "%");
+      showMsgRef.current("Submitted. Score: " + d.score + "%");
       // optionally redirect or show results
     } else {
-      showMessage("Submit failed: " + (d.message || JSON.stringify(d)));
+      showMsgRef.current("Submit failed: " + (d.message || JSON.stringify(d)));
     }
   }
 
@@ -87,7 +92,7 @@ export default function QuizAttempt({ classroomCode, quizId }) {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() =>
-        showMessage("Session expired. Please sign in again.", "error")
+        showMsgRef.current("Session expired. Please sign in again.", "error")
       }
     >
       {messageComponent}
@@ -105,7 +110,7 @@ export default function QuizAttempt({ classroomCode, quizId }) {
             <QuizTimer
               expiresAt={new Date(expiresAt)}
               onExpire={() =>
-                showMessage("Time's up — submitting automatically")
+                showMsgRef.current("Time's up — submitting automatically")
               }
             />
           )}

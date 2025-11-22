@@ -1,9 +1,9 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { apiFetch } from "../utils/apiClient";
-import useMessage from "../hooks/useMessage";
+import { apiFetch } from "../../utils/apiClient";
+import useMessage from "../../hooks/useMessage";
 import "./css/AnswerSubmission.css";
-import TokenGuard from "./auth/tokenGuard";
+import TokenGuard from "../auth/tokenGuard";
 
 const AnswerSubmission = ({ activityId, onSubmitted }) => {
   const [text, setText] = useState("");
@@ -12,9 +12,15 @@ const AnswerSubmission = ({ activityId, onSubmitted }) => {
 
   const { messageComponent, showMessage } = useMessage();
 
+  const showMsgRef = useRef(showMessage);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
+
   const submit = async () => {
     if (!text.trim() && !file) {
-      showMessage("Add an answer or attach a file.", "error");
+      showMsgRef.current("Add an answer or attach a file.", "error");
       return;
     }
     setSending(true);
@@ -39,11 +45,11 @@ const AnswerSubmission = ({ activityId, onSubmitted }) => {
         setFile(null);
 
         if (onSubmitted) onSubmitted();
-        showMessage("Submitted", "success");
-      } else showMessage(data?.error || "Failed to submit", "error");
+        showMsgRef.current("Submitted", "success");
+      } else showMsgRef.current(data?.error || "Failed to submit", "error");
     } catch (e) {
       console.error("Submit error:", e);
-      showMessage("Server error", "error");
+      showMsgRef.current("Server error", "error");
     } finally {
       setSending(false);
     }
@@ -53,7 +59,7 @@ const AnswerSubmission = ({ activityId, onSubmitted }) => {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() => {
-        showMessage("Session expired. Please sign in again.", "error");
+        showMsgRef.current("Session expired. Please sign in again.", "error");
       }}
       loadingFallback={<div style={{ padding: 32 }}>Validation Session...</div>}
     >

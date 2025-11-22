@@ -1,23 +1,29 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/apiClient.js";
 import useMessage from "../../hooks/useMessage";
 import useLogout from "../../hooks/useLogout";
 import TokenGuard from "../../components/auth/tokenGuard";
-import "./CreateClassroom.css";
+import "./css/CreateClassroom.css";
 
 const CreateClassroom = () => {
   const navigate = useNavigate();
   const [logout, LogoutModal] = useLogout();
+  const { messageComponent, showMessage } = useMessage();
+
+  const showMsgRef = useRef(showMessage);
 
   const [name, setName] = useState("");
   const [schoolYear, setSchoolYear] = useState("");
   const [section, setSection] = useState("");
-  const { messageComponent, showMessage } = useMessage();
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   const handleCreate = () => {
     if (!name || !schoolYear) {
-      return showMessage("Please fill all fields.", "error");
+      return showMsgRef.current("Please fill all fields.", "error");
     }
     const payload = { name, schoolYear };
     if (section.trim()) payload.section = section.trim();
@@ -28,22 +34,30 @@ const CreateClassroom = () => {
     })
       .then(({ data, unauthorized }) => {
         if (unauthorized)
-          return showMessage("Session expired. Please sign in again.", "error");
+          return showMsgRef.current(
+            "Session expired. Please sign in again.",
+            "error"
+          );
         if (data?.success) {
-          showMessage("Successfully created a classroom", "success");
+          showMsgRef.current("Successfully created a classroom", "success");
           navigate("/dash");
         } else {
-          showMessage(data?.error || "Failed to create classroom.", "error");
+          showMsgRef.current(
+            data?.error || "Failed to create classroom.",
+            "error"
+          );
         }
       })
-      .catch(() => showMessage("Server error. Try again later.", "error"));
+      .catch(() =>
+        showMsgRef.current("Server error. Try again later.", "error")
+      );
   };
 
   return (
     <TokenGuard
       redirectInfo="/login"
       onExpire={() =>
-        showMessage("Session expired. Please sign in again.", "error")
+        showMsgRef.current("Session expired. Please sign in again.", "error")
       }
     >
       {messageComponent}

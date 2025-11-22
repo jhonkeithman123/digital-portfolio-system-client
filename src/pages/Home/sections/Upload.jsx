@@ -1,5 +1,5 @@
 import TokenGuard from "../../../components/auth/tokenGuard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import "../Home.css";
 import { apiFetch } from "../../../utils/apiClient";
 
@@ -12,6 +12,8 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
   const [activities, setActivities] = useState([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
 
+  const showMsgRef = useRef(showMessage);
+
   const allowedTypes = [
     "application/pdf",
     "application/msword",
@@ -22,6 +24,10 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
   const maxSize = 5 * 1024 * 1024;
   const fmtDate = (d) => new Date(d).toLocaleDateString();
   const dbg = (...args) => console.log("[Upload]", ...args);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   const normalize = (list = []) =>
     list.map((a) => ({
@@ -35,11 +41,14 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
   const validateFile = (f) => {
     if (!f) return false;
     if (!allowedTypes.includes(f.type)) {
-      showMessage("Invalid type: PDF, DOC, DOCX, JPG, PNG only.", "error");
+      showMsgRef.current(
+        "Invalid type: PDF, DOC, DOCX, JPG, PNG only.",
+        "error"
+      );
       return false;
     }
     if (f.size > maxSize) {
-      showMessage("File exceeds 5MB.", "error");
+      showMsgRef.current("File exceeds 5MB.", "error");
       return false;
     }
     return true;
@@ -74,7 +83,7 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
             if (fb.data?.success)
               setActivities(normalize(fb.data.activities || []));
             else
-              showMessage(
+              showMsgRef.current(
                 data?.error || fb.data?.error || "Failed to load activities",
                 "error"
               );
@@ -82,7 +91,8 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
         }
       } catch (e) {
         dbg("[Upload] fetch error:", e);
-        if (!ignore) showMessage("Server error loading activities.", "error");
+        if (!ignore)
+          showMsgRef.current("Server error loading activities.", "error");
       } finally {
         if (!ignore) setLoadingActivities(false);
       }
@@ -91,7 +101,7 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
     return () => {
       ignore = true;
     };
-  }, [classroomCode, role, showMessage]);
+  }, [classroomCode, role]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -132,7 +142,7 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
         instructions,
         creating,
       });
-      showMessage(disabledReason || "Complete required fields", "error");
+      showMsgRef.current(disabledReason || "Complete required fields", "error");
       return;
     }
     setCreating(true);
@@ -153,9 +163,12 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
 
       if (!data?.success) {
         dbg("Create failed:", data?.error);
-        showMessage(data?.error || "Failed to create activity.", "error");
+        showMsgRef.current(
+          data?.error || "Failed to create activity.",
+          "error"
+        );
       } else {
-        showMessage("Activity created.", "success");
+        showMsgRef.current("Activity created.", "success");
         setActivities((prev) => [
           {
             id: data.id,
@@ -183,7 +196,7 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
       }
     } catch (e) {
       dbg("Submit exception:", e);
-      showMessage("Server error.", "error");
+      showMsgRef.current("Server error.", "error");
     } finally {
       dbg("Submit finished");
       setCreating(false);
@@ -194,7 +207,7 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() =>
-        showMessage("Session expired. Please sign in again.", "error")
+        showMsgRef.current("Session expired. Please sign in again.", "error")
       }
     >
       <section className="home-card">
@@ -270,7 +283,7 @@ const FileUpload = ({ role, classroomCode, showMessage, loadingOuter }) => {
                   className="file-remove"
                   onClick={() => {
                     setFile(null);
-                    showMessage("File removed.", "info");
+                    showMsgRef.current("File removed.", "info");
                   }}
                 >
                   ✕

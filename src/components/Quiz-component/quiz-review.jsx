@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { apiFetch } from "../../../../utils/apiClient.js";
-import TokenGuard from "../../../../components/auth/tokenGuard.jsx";
-import useMessage from "../../../../hooks/useMessage.jsx";
+import { apiFetch } from "../../utils/apiClient.js";
+import TokenGuard from "../auth/tokenGuard.jsx";
+import useMessage from "../../hooks/useMessage.jsx";
 import "./css/quiz-review.css";
 
 export default function QuizReviewPage() {
@@ -24,6 +24,11 @@ export default function QuizReviewPage() {
   const attemptsControllerRef = useRef(null);
   const lastFetchRef = useRef(0);
   const mountedRef = useRef(true);
+  const showMsgRef = useRef(showMessage);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   async function loadAttempts() {
     // throttle: don't run more than once per second
@@ -47,13 +52,13 @@ export default function QuizReviewPage() {
         { signal: ac.signal }
       );
       if (unauthorized) {
-        showMessage("Session expired. Please sign in again.", "error");
+        showMsgRef.current("Session expired. Please sign in again.", "error");
         setAttempts([]);
         return;
       }
       if (!mountedRef.current) return;
       if (!data?.success) {
-        showMessage(data?.message || "Failed to load attempts", "error");
+        showMsgRef.current(data?.message || "Failed to load attempts", "error");
         setAttempts([]);
         return;
       }
@@ -64,7 +69,7 @@ export default function QuizReviewPage() {
         return;
       }
       console.error("load attempts", err);
-      showMessage("Server error", "error");
+      showMsgRef.current("Server error", "error");
     } finally {
       if (mountedRef.current) setLoading(false);
       attemptsControllerRef.current = null;
@@ -114,7 +119,7 @@ export default function QuizReviewPage() {
     if (!selected) return;
     const scoreNum = Number(gradingScore);
     if (!Number.isFinite(scoreNum) || scoreNum < 0 || scoreNum > 100) {
-      showMessage("Score must be 0-100", "error");
+      showMsgRef.current("Score must be 0-100", "error");
       return;
     }
     try {
@@ -130,20 +135,20 @@ export default function QuizReviewPage() {
         }
       );
       if (unauthorized) {
-        showMessage("Session expired. Please sign in again.", "error");
+        showMsgRef.current("Session expired. Please sign in again.", "error");
         return;
       }
       if (!data?.success) {
-        showMessage(data?.message || "Failed to save grade", "error");
+        showMsgRef.current(data?.message || "Failed to save grade", "error");
         return;
       }
-      showMessage("Attempt graded", "success");
+      showMsgRef.current("Attempt graded", "success");
       // refresh list and close detail
       await loadAttempts();
       setSelected(null);
     } catch (err) {
       console.error("submit grade", err);
-      showMessage("Server error", "error");
+      showMsgRef.current("Server error", "error");
     }
   }
 
@@ -151,7 +156,7 @@ export default function QuizReviewPage() {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() =>
-        showMessage("Session expired. Please sign in again.", "error")
+        showMsgRef.current("Session expired. Please sign in again.", "error")
       }
     >
       {messageComponent}

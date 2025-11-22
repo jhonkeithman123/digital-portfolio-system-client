@@ -1,8 +1,8 @@
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../../components/Header";
+import Header from "../../components/Component-elements/Header";
 import useMessage from "../../hooks/useMessage";
-import { useEffect, useState } from "react";
-import InputField from "../../components/InputField";
+import InputField from "../../components/Component-elements/InputField";
 import { apiFetchPublic } from "../../utils/apiClient.js";
 import "./Signup.css";
 
@@ -17,14 +17,20 @@ const Signup = () => {
 
   const { messageComponent, showMessage } = useMessage();
 
+  const showMsgRef = useRef(showMessage);
+
   const role = localStorage.getItem("role");
   const validRoles = ["student", "teacher"];
   const bgUrl = `${process.env.PUBLIC_URL || ""}/classroom.jpg`;
 
   useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
+
+  useEffect(() => {
     if (!role || !validRoles.includes(role)) {
       localStorage.removeItem("user");
-      showMessage(
+      showMsgRef.current(
         "Your role is not in the storage. Please choose again.",
         "error"
       );
@@ -40,22 +46,22 @@ const Signup = () => {
 
   const validate = () => {
     if (!username || !email || !password) {
-      showMessage("All fields are required", "error");
+      showMsgRef.current("All fields are required", "error");
       return false;
     }
 
     if (!/\S+@\S+\./.test(email)) {
-      showMessage("Invalid email format", "error");
+      showMsgRef.current("Invalid email format", "error");
       return false;
     }
 
     if (password.length < 6) {
-      showMessage("Passwords must be at least 6 characters", "error");
+      showMsgRef.current("Passwords must be at least 6 characters", "error");
       return false;
     }
 
     if (password !== confirmPassword) {
-      showMessage("Passwords must match", "error");
+      showMsgRef.current("Passwords must match", "error");
       return false;
     }
 
@@ -81,13 +87,13 @@ const Signup = () => {
     )
       .then(({ ok, data }) => {
         if (ok && data?.success) {
-          showMessage("Signup successful! Redirecting...", "success");
+          showMsgRef.current("Signup successful! Redirecting...", "success");
           setTimeout(() => navigate(`/login?role=${role}`), 1500);
         } else {
-          showMessage(data?.error || "Signup failed", "error");
+          showMsgRef.current(data?.error || "Signup failed", "error");
         }
       })
-      .catch(() => showMessage("Server error", "error"));
+      .catch(() => showMsgRef.current("Server error", "error"));
   };
 
   const handleSubmit = (e) => {

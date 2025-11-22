@@ -4,16 +4,19 @@ import useMessage from "../../hooks/useMessage";
 import Submissions from "./sections/Submissions";
 import Quizzes from "./sections/Quizzes";
 import FileUpload from "./sections/Upload";
-import Header from "../../components/Header";
+import Header from "../../components/Component-elements/Header";
 import useLogout from "../../hooks/useLogout";
 import TokenGuard from "../../components/auth/tokenGuard";
 import { apiFetch } from "../../utils/apiClient.js";
 import "./Home.css";
 
 const Home = () => {
+  const { messageComponent, showMessage } = useMessage();
   const navigate = useNavigate();
   const [logout, LogoutModal] = useLogout();
+
   const didInit = useRef(false);
+  const showMsgRef = useRef(showMessage);
 
   const [role, setRole] = useState("");
   const [user, setUser] = useState(null);
@@ -24,8 +27,11 @@ const Home = () => {
   const [submissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
 
-  const { messageComponent, showMessage } = useMessage();
   const dbg = (...a) => console.debug("[Home]", ...a);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   useEffect(() => {
     if (didInit.current) return;
@@ -42,7 +48,10 @@ const Home = () => {
     (async () => {
       const { unauthorized, data } = await apiFetch("/auth/session");
       if (unauthorized || !data?.success) {
-        showMessage("Missing or expired session. Please log in.", "error");
+        showMsgRef.current(
+          "Missing or expired session. Please log in.",
+          "error"
+        );
         navigate("/login", { replace: true });
         return;
       }
@@ -55,7 +64,7 @@ const Home = () => {
         } catch {}
       }
     })();
-  }, [navigate, showMessage]);
+  }, [navigate]);
 
   // Fetch teacher classroom code after user loaded
   useEffect(() => {
@@ -76,12 +85,12 @@ const Home = () => {
               section: data.section ?? null,
             });
           } else {
-            showMessage("No classroom created yet.", "info");
+            showMsgRef.current("No classroom created yet.", "info");
           }
         }
       } catch (e) {
         console.error("Error loading classroom:", e);
-        if (!ignore) showMessage("Failed to load classroom", "error");
+        if (!ignore) showMsgRef.current("Failed to load classroom", "error");
       } finally {
         if (!ignore) setLoadingClassroom(false);
       }
@@ -140,7 +149,7 @@ const Home = () => {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() =>
-        showMessage("Session expired. Please sign in again.", "error")
+        showMsgRef.current("Session expired. Please sign in again.", "error")
       }
     >
       {messageComponent}
@@ -188,12 +197,15 @@ const Home = () => {
                 })
                   .then(({ data }) => {
                     if (data.success) {
-                      showMessage("Feedback saved successfully!", "success");
+                      showMsgRef.current(
+                        "Feedback saved successfully!",
+                        "success"
+                      );
                     } else {
-                      showMessage("Failed to save feedback", "error");
+                      showMsgRef.current("Failed to save feedback", "error");
                     }
                   })
-                  .catch(() => showMessage("Server error", "error"))
+                  .catch(() => showMsgRef.current("Server error", "error"))
                   .finally(() => setIsSaving(false));
               }}
             />

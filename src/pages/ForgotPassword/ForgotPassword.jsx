@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../../components/Header";
+import Header from "../../components/Component-elements/Header";
 import useMessage from "../../hooks/useMessage";
-import InputField from "../../components/InputField";
+import InputField from "../../components/Component-elements/InputField";
 import { apiFetchPublic } from "../../utils/apiClient.js";
 import "./ForgotPassword.css";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
+  const { messageComponent, showMessage } = useMessage();
+
+  const showMsgRef = useRef(showMessage);
 
   const [code, setCode] = useState("");
   const [step, setStep] = useState("verify");
@@ -19,13 +22,16 @@ const ForgotPassword = () => {
   const role = localStorage.getItem("role");
   const validRoles = ["student", "teacher"];
 
-  const { messageComponent, showMessage } = useMessage();
   const bgUrl = `${process.env.PUBLIC_URL || ""}/classroom.jpg`;
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   useEffect(() => {
     if (!role || !validRoles.includes(role)) {
       localStorage.removeItem("user");
-      showMessage(
+      showMsgRef.current(
         "Your role is not in the storage. Please choose again.",
         "error"
       );
@@ -45,7 +51,7 @@ const ForgotPassword = () => {
   const handleCodeVerify = async () => {
     setLoading(true);
     if (!code.trim()) {
-      showMessage("Please enter the verification code.", "error");
+      showMsgRef.current("Please enter the verification code.", "error");
       setLoading(false);
       return;
     }
@@ -56,14 +62,14 @@ const ForgotPassword = () => {
         body: JSON.stringify({ email, code }),
       });
       if (ok && data?.success) {
-        showMessage(data.message || "Email verified!", "success");
+        showMsgRef.current(data.message || "Email verified!", "success");
         setStep("reset");
       } else {
-        showMessage(data?.message || "Invalid or expired code", "error");
+        showMsgRef.current(data?.message || "Invalid or expired code", "error");
       }
     } catch (err) {
       console.error(err);
-      showMessage("Server error. Try again later.", "error");
+      showMsgRef.current("Server error. Try again later.", "error");
     } finally {
       setLoading(false);
     }
@@ -73,13 +79,13 @@ const ForgotPassword = () => {
     console.log("forgotPass tapped");
     setLoading(true);
     if (!email.trim()) {
-      showMessage("Email is required.", "error");
+      showMsgRef.current("Email is required.", "error");
       setLoading(false);
       return;
     }
 
     if (!isValidEmail(email)) {
-      showMessage("Please enter a valid email address.", "error");
+      showMsgRef.current("Please enter a valid email address.", "error");
       setLoading(false);
       return;
     }
@@ -90,17 +96,20 @@ const ForgotPassword = () => {
         body: JSON.stringify({ email, role }),
       });
       if (ok && data?.success) {
-        showMessage(data.message || "Verification code sent!", "success");
+        showMsgRef.current(
+          data.message || "Verification code sent!",
+          "success"
+        );
         setStep("code");
       } else {
         console.error(data);
-        showMessage(
+        showMsgRef.current(
           data?.error || "Failed to send verification code.",
           "error"
         );
       }
     } catch (error) {
-      showMessage("Server error. Please try again later.", "error");
+      showMsgRef.current("Server error. Please try again later.", "error");
     } finally {
       setLoading(false);
     }
@@ -109,19 +118,19 @@ const ForgotPassword = () => {
   const handleReset = async () => {
     setLoading(true);
     if (!newPassword || !retryPassword) {
-      showMessage("Please fill in both password fields.", "error");
+      showMsgRef.current("Please fill in both password fields.", "error");
       setLoading(false);
       return;
     }
 
     if (newPassword !== retryPassword) {
-      showMessage("Passwords do not match.", "error");
+      showMsgRef.current("Passwords do not match.", "error");
       setLoading(false);
       return;
     }
 
     if (newPassword.length < 6) {
-      showMessage("Password must be at least 6 characters.", "error");
+      showMsgRef.current("Password must be at least 6 characters.", "error");
       setLoading(false);
       return;
     }
@@ -132,15 +141,18 @@ const ForgotPassword = () => {
         body: JSON.stringify({ email, newPassword }),
       });
       if (ok && data?.success) {
-        showMessage(data.message || "Password reset successful!", "success");
+        showMsgRef.current(
+          data.message || "Password reset successful!",
+          "success"
+        );
         setTimeout(() => navigate("/login"), 1500);
       } else {
         console.error(data || "Failed to reset password.");
-        showMessage("Failed to reset password.", "error");
+        showMsgRef.current("Failed to reset password.", "error");
       }
     } catch (err) {
       console.error("Server error", err);
-      showMessage("Server error", "error");
+      showMsgRef.current("Server error", "error");
     } finally {
       setLoading(false);
     }

@@ -5,12 +5,12 @@ import useTamperGuard from "../../security/useTamperGuard";
 import useMessage from "../../hooks/useMessage";
 import useLogout from "../../hooks/useLogout";
 import useConfirm from "../../hooks/useConfirm";
-import BurgerMenu from "../../components/burger_menu";
+import BurgerMenu from "../../components/Component-elements/burger_menu";
 import StudentInvite from "../../components/StudentInvite";
-import NotificationMenu from "../../components/NotificationMenu";
-import Header from "../../components/Header";
+import Header from "../../components/Component-elements/Header";
 import TokenGuard from "../../components/auth/tokenGuard";
-import InputField from "../../components/InputField";
+import InputField from "../../components/Component-elements/InputField";
+import NotificationBell from "../../components/Component-elements/NotificationBell";
 import { apiFetch } from "../../utils/apiClient";
 
 const roleColors = {
@@ -155,9 +155,9 @@ const Dashboard = () => {
         prev.map((s) => (s.id === id ? { ...s, section: value } : s))
       );
       setEditSections((prev) => ({ ...prev, [id]: "" }));
-      showMessage("Section saved", "success");
+      showMsgRef.current("Section saved", "success");
     } catch {
-      showMessage("Failed to save section", "error");
+      showMsgRef.current("Failed to save section", "error");
     }
   };
 
@@ -233,12 +233,12 @@ const Dashboard = () => {
           localStorage.setItem("user", JSON.stringify(merged));
           setUser((u) => ({ ...(u || {}), section: value }));
         } catch {}
-        showMessage("Section saved", "success");
+        showMsgRef.current("Section saved", "success");
       } else {
-        showMessage(data?.message || "Could not set section", "error");
+        showMsgRef.current(data?.message || "Could not set section", "error");
       }
     } catch {
-      showMessage("Server error", "error");
+      showMsgRef.current("Server error", "error");
     } finally {
       setSavingMySection(false);
     }
@@ -257,10 +257,10 @@ const Dashboard = () => {
       if (!data?.success) throw new Error();
       setClassroomInfo((c) => ({ ...(c || {}), section: value }));
       setClassroomSectionDraft("");
-      showMessage("Classroom section set", "success");
+      showMsgRef.current("Classroom section set", "success");
     } catch (e) {
       console.log("Failed to set classroom section:", e);
-      showMessage("Failed to set classroom section", "error");
+      showMsgRef.current("Failed to set classroom section", "error");
     }
   };
 
@@ -284,10 +284,13 @@ const Dashboard = () => {
         ...(c || {}),
         section: data.section ?? null,
       }));
-      showMessage("Classroom section cleared", "success");
+      showMsgRef.current("Classroom section cleared", "success");
     } catch (err) {
       console.error("Failed to clear classroom:", err);
-      showMessage(err?.error || "Failed to clear classroom section", "error");
+      showMsgRef.current(
+        err?.error || "Failed to clear classroom section",
+        "error"
+      );
     }
   };
 
@@ -316,13 +319,13 @@ const Dashboard = () => {
     const handlePopState = async () => {
       const { unauthorized, data } = await apiFetch("/auth/session");
       if (unauthorized || !data?.success) {
-        showMessage("Unauthorized access", "error");
+        showMsgRef.current("Unauthorized access", "error");
         setTimeout(() => navigate("/login"), 1200);
       }
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [navigate, showMessage]);
+  }, [navigate]);
 
   useEffect(() => {
     if (user?.role === "student") setHasActivity(true);
@@ -349,7 +352,7 @@ const Dashboard = () => {
           classroomCode={classroomInfo.code}
           onClose={() => setInviteOpen(false)}
           onInvite={(studentId) =>
-            showMessage(`Invited student ID ${studentId}`, "info")
+            showMsgRef.current(`Invited student ID ${studentId}`, "info")
           }
         />
       )}
@@ -365,31 +368,6 @@ const Dashboard = () => {
 
       <ConfirmModal />
 
-      <div
-        className="notification-icon"
-        onClick={() => setShowNotifications((prev) => !prev)}
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          aria-hidden="true"
-        >
-          <path d="M12 2a7 7 0 0 0-7 7v4.5l-1.7 2.6a1 1 0 0 0 .8 1.6h16a1 1 0 0 0 .8-1.6L19 13.5V9a7 7 0 0 0-7-7zm0 20a2.5 2.5 0 0 0 2.5-2.5h-5A2.5 2.5 0 0 0 12 22z" />
-        </svg>
-        {unreadCount > 0 && (
-          <span className="notification-badge">{unreadCount}</span>
-        )}
-      </div>
-
-      {showNotifications && (
-        <NotificationMenu
-          setUnreadCount={setUnreadCount}
-          onClose={() => setShowNotifications(false)}
-        />
-      )}
-
       <div className="dashboard">
         <Header
           variant="authed"
@@ -401,36 +379,23 @@ const Dashboard = () => {
           }
           headerClass={`dashboard-header ${roleClass}`}
           welcomeClass={`dashboard-welcome ${roleClass}`}
-          leftActions={
-            <div
-              className="notification-icon"
-              onClick={() => setShowNotifications((prev) => !prev)}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M12 2a7 7 0 0 0-7 7v4.5l-1.7 2.6a1 1 0 0 0 .8 1.6h16a1 1 0 0 0 .8-1.6L19 13.5V9a7 7 0 0 0-7-7zm0 20a2.5 2.5 0 0 0 2.5-2.5h-5A2.5 2.5 0 0 0 12 22z" />
-              </svg>
-              {unreadCount > 0 && (
-                <span className="notification-badge">{unreadCount}</span>
-              )}
-            </div>
-          }
           rightActions={
-            user.role === "teacher" && (
-              <button
-                className={`pill-btn ${showSections ? "active" : ""}`}
-                aria-pressed={showSections}
-                onClick={() => setShowSections((s) => !s)}
-                title="Manage student sections"
-              >
-                {showSections ? "Hide Student Sections" : "Manage Sections"}
-              </button>
-            )
+            <>
+              <NotificationBell
+                unreadCount={unreadCount}
+                setUnreadCount={setUnreadCount}
+              />
+              {user.role === "teacher" && (
+                <button
+                  className={`pill-btn ${showSections ? "active" : ""}`}
+                  aria-pressed={showSections}
+                  onClick={() => setShowSections((s) => !s)}
+                  title="Manage student sections"
+                >
+                  {showSections ? "Hide Student Sections" : "Manage Sections"}
+                </button>
+              )}
+            </>
           }
         />
         <main className="dashboard-main">

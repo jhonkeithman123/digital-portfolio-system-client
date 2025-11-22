@@ -3,6 +3,7 @@
   --nm-border: rgba(255, 255, 255, 0.55);
   --nm-shadow: 0 10px 36px rgba(0, 0, 0, 0.35);
   --nm-text: #0f172a;
+  --nm-muted: #64748b;
   --nm-link: #0f172a;
 }
 
@@ -11,13 +12,14 @@
   --nm-border: rgba(148, 163, 184, 0.7);
   --nm-shadow: 0 16px 42px rgba(0, 0, 0, 0.8);
   --nm-text: #e5e7eb;
+  --nm-muted: #d7dce4;
   --nm-link: #bfdbfe;
 }
 
 .notification-menu {
-  position: fixed; /* anchor to viewport (bell is fixed at left) */
-  top: 15vh;
-  left: 12px;
+  position: absolute; /* anchor to viewport (bell is fixed at left) */
+  top: 52px;
+  right: 0;
   width: min(380px, 92vw);
   max-height: 72vh;
   padding: 14px 14px 10px;
@@ -60,8 +62,8 @@
 .notification-menu::after {
   content: "";
   position: absolute;
-  top: -10px; /* move above the card */
-  left: 24px; /* align under the bell */
+  top: -10px;
+  right: 18px;
   pointer-events: none;
   z-index: 1;
   width: 16px;
@@ -90,30 +92,36 @@
 
 .notification-menu li {
   padding: 0.75rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.45);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 
 .notification-menu li.unread {
-  background-color: #f9f9f9;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+:root[data-theme="dark"] .notification-menu li.unread {
+  background-color: rgba(30, 64, 175, 0.55);
 }
 
 .notification-menu li.read {
-  background-color: #fff;
-  opacity: 0.8;
+  background-color: rgba(255, 255, 255, 0.2);
+  opacity: 0.85;
+}
+:root[data-theme="dark"] .notification-menu li.read {
+  background-color: rgba(15, 23, 42, 0.95);
 }
 
 .notification-menu a {
   text-decoration: none;
-  color: #0077cc;
+  color: var(--nm-link);
   font-weight: 500;
 }
 
 .notification-menu span {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--nm-muted);
 }
 
 @keyframes fadeIn {
@@ -143,6 +151,7 @@
   align-items: center;
   gap: 6px;
 }
+
 .nm-btn {
   appearance: none;
   border: 1px solid rgba(255, 255, 255, 0.55);
@@ -215,7 +224,7 @@
   appearance: none;
   border: 1px solid rgba(255, 255, 255, 0.65);
   background: linear-gradient(180deg, #ffffffcc, #ffffff99);
-  color: #0f172a;
+  color: var(--nm-muted);
   font-size: 18px;
   line-height: 1;
   width: 28px;
@@ -245,7 +254,7 @@
 
 .nm-empty {
   padding: 14px 10px;
-  color: #334155;
+  color: var(--nm-muted);
   opacity: 0.8;
 }
 
@@ -302,7 +311,7 @@
 .nm-time {
   grid-column: 2 / -1;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--nm-muted);
   opacity: 0.9;
 }
 

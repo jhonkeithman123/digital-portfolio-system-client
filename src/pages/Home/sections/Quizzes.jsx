@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../../utils/apiClient.js";
 import useMessage from "../../../hooks/useMessage";
@@ -11,7 +11,13 @@ const Quizzes = ({ role, classroomCode }) => {
   const [loading, setLoading] = useState(true);
   const { messageComponent, showMessage } = useMessage();
   const [confirm, ConfirmModal] = useConfirm();
+
   const navigate = useNavigate();
+  const showMsgRef = useRef(showMessage);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   // prefer explicit prop, then user object in localStorage, then a simple key
   let storedUser = null;
@@ -55,19 +61,19 @@ const Quizzes = ({ role, classroomCode }) => {
             } catch {}
           }
         } else {
-          showMessage(
+          showMsgRef.current(
             "Failed to determine classroom. Please select a classroom first.",
             "error"
           );
         }
       } catch (err) {
-        showMessage("[QUIZZES] Server Error", "error");
+        showMsgRef.current("[QUIZZES] Server Error", "error");
       }
     })();
     return () => {
       mounted = false;
     };
-  }, [classCode, role, showMessage]);
+  }, [classCode, role]);
 
   useEffect(() => {
     if (!classCode) {
@@ -80,7 +86,7 @@ const Quizzes = ({ role, classroomCode }) => {
         const { data } = await apiFetch(`/quizzes/${classCode}/quizzes`);
         if (mounted && data?.success) setQuizzes(data.quizzes || []);
       } catch (e) {
-        showMessage("Failed to load quizzes", "error");
+        showMsgRef.current("Failed to load quizzes", "error");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -116,12 +122,12 @@ const Quizzes = ({ role, classroomCode }) => {
       });
       if (data?.success) {
         setQuizzes((list) => list.filter((x) => x.id !== q.id));
-        showMessage("Quiz deleted", "success");
+        showMsgRef.current("Quiz deleted", "success");
       } else {
-        showMessage(data?.message || "Failed to delete quiz", "error");
+        showMsgRef.current(data?.message || "Failed to delete quiz", "error");
       }
     } catch (e) {
-      showMessage("Server error", "error");
+      showMsgRef.current("Server error", "error");
     }
   }
 
@@ -129,7 +135,7 @@ const Quizzes = ({ role, classroomCode }) => {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() =>
-        showMessage("Session expired. Please sign in again.", "error")
+        showMsgRef.current("Session expired. Please sign in again.", "error")
       }
     >
       {messageComponent}

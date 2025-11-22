@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { apiFetch } from "../../../../utils/apiClient";
-import useMessage from "../../../../hooks/useMessage";
-import ActivityComments from "../../../../components/ActivityComments";
-import AnswerSubmission from "../../../../components/AnswerSubmission";
-import TeacherInstructions from "../../../../components/TeacherInstructions";
+import { apiFetch } from "../../utils/apiClient";
+import useMessage from "../../hooks/useMessage";
+import ActivityComments from "./ActivityComments";
+import AnswerSubmission from "./AnswerSubmission";
+import TeacherInstructions from "./TeacherInstructions";
 import "./css/Activity.css";
-import TokenGuard from "../../../../components/auth/tokenGuard";
+import TokenGuard from "../auth/tokenGuard";
 
 const ActivityView = () => {
   const { id } = useParams();
@@ -15,6 +15,12 @@ const ActivityView = () => {
 
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const showMsgRef = useRef(showMessage);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   const user = (() => {
     try {
@@ -32,12 +38,12 @@ const ActivityView = () => {
 
       if (data?.success) setActivity(data.activity);
       else {
-        showMessage(data?.error || "Failed to load activity");
+        showMsgRef.current(data?.error || "Failed to load activity");
         navigate(-1);
       }
     } catch (e) {
       console.error("Activity load error", e);
-      showMessage("Server error loading activity");
+      showMsgRef.current("Server error loading activity");
       navigate(-1);
     } finally {
       setLoading(false);
@@ -59,10 +65,12 @@ const ActivityView = () => {
     <TokenGuard
       redirectInfo="/login"
       onExpire={() => {
-        showMessage("Session expired. Please login again", "error");
+        showMsgRef.current("Session expired. Please login again", "error");
       }}
       loadingFallback={<div style={{ padding: 32 }}>Validating Session...</div>}
     >
+      {messageComponent}
+
       <div className="activity-view-page">
         <button className="activity-back" onClick={() => navigate(-1)}>
           ← Back

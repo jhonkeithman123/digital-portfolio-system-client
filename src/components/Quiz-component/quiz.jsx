@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import useMessage from "../../../../hooks/useMessage.jsx";
-import TokenGuard from "../../../../components/auth/tokenGuard.jsx";
-import { apiFetch } from "../../../../utils/apiClient.js";
+import useMessage from "../../hooks/useMessage.jsx";
+import TokenGuard from "../auth/tokenGuard.jsx";
+import { apiFetch } from "../../utils/apiClient.js";
 import "./css/quiz.css";
 
 function uid(prefix = "") {
@@ -32,6 +32,11 @@ export default function QuizEditor({ classroomCode, initialData }) {
 
   const hydrated = useRef(false);
   const lastQuizId = useRef(initialData?.quizId ?? null);
+  const showMsgRef = useRef(showMessage);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   useEffect(() => {
     // reset the hydration guard if we switched to a different quiz
@@ -311,7 +316,8 @@ export default function QuizEditor({ classroomCode, initialData }) {
   }
 
   async function saveQuiz() {
-    if (!classroomCode) return showMessage("No classroom selected", "error");
+    if (!classroomCode)
+      return showMsgRef.current("No classroom selected", "error");
 
     const attempts = Math.max(1, parseInt(attemptsAllowed || 1, 10));
     const mins = parseInt(timeLimitMinutes, 10);
@@ -339,20 +345,20 @@ export default function QuizEditor({ classroomCode, initialData }) {
         body: JSON.stringify(payload),
       });
       if (unauthorized) {
-        showMessage("Session expired. Please sign in again.", "error");
+        showMsgRef.current("Session expired. Please sign in again.", "error");
         navigate("/login");
         return;
       }
       if (!data.success) {
-        showMessage(data.message || "Save failed", "error");
+        showMsgRef.current(data.message || "Save failed", "error");
         return;
       }
-      showMessage(isEdit ? "Quiz updated" : "Quiz created", "success");
+      showMsgRef.current(isEdit ? "Quiz updated" : "Quiz created", "success");
       // optionally go back to list
       // navigate(`/quizzes/${classroomCode}/quizzes`);
     } catch (err) {
       console.error("Error saving quiz", err);
-      showMessage("Server error saving quiz", "error");
+      showMsgRef.current("Server error saving quiz", "error");
     }
   }
 
@@ -437,7 +443,9 @@ export default function QuizEditor({ classroomCode, initialData }) {
   return (
     <TokenGuard
       redirectInfo="/login"
-      onExpire={() => showMessage("Session expired. Please sign in", "error")}
+      onExpire={() =>
+        showMsgRef.current("Session expired. Please sign in", "error")
+      }
     >
       {messageComponent}
       <section className="quiz-card">

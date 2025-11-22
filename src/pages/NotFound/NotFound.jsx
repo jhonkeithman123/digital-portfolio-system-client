@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import Header from "../../components/Header";
+import Header from "../../components/Component-elements/Header";
 import "./NotFound.css";
 
 const NotFound = () => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "../../utils/apiClient.js";
-import "./InvNotificationMenu.css";
+import "./css/InvNotificationMenu.css";
 
 const InvNotificationMenu = ({
   invites = [],

@@ -1,14 +1,14 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import useMessage from "../../hooks/useMessage";
-import Header from "../../components/Header";
+import Header from "../../components/Component-elements/Header";
 import {
   localStorageRemove,
   localStorageGet,
   localStorageSet,
 } from "../../utils/modifyFromLocalStorage";
 import { apiFetchPublic } from "../../utils/apiClient.js";
-import InputField from "../../components/InputField";
+import InputField from "../../components/Component-elements/InputField";
 import "./Login.css";
 
 const Login = () => {
@@ -17,11 +17,17 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({});
 
+  const navigate = useNavigate();
   const { messageComponent, showMessage } = useMessage();
+  const valid_roles = useMemo(() => ["student", "teacher"], []);
+
+  const showMsgRef = useRef(showMessage);
 
   const role = localStorageGet({ keys: ["role"] })[0];
-  const navigate = useNavigate();
-  const valid_roles = useMemo(() => ["student", "teacher"], []);
+
+  useEffect(() => {
+    showMsgRef.current = showMessage;
+  }, [showMessage]);
 
   useEffect(() => {
     localStorageRemove({ keys: ["token", "user", "currentClassroom"] });
@@ -56,7 +62,7 @@ const Login = () => {
     const validationErrors = validation();
     if (Object.keys(validationErrors).length > 0) {
       const firstError = Object.values(validationErrors)[0];
-      showMessage(firstError, "error");
+      showMsgRef.current(firstError, "error");
       return;
     }
 
@@ -71,10 +77,10 @@ const Login = () => {
       .then(({ ok, data }) => {
         if (!ok || !data?.success) {
           const msg = data?.error || "Login failed";
-          showMessage(msg, "error");
+          showMsgRef.current(msg, "error");
           return;
         }
-        showMessage("Login successfull", "success");
+        showMsgRef.current("Login successfull", "success");
         setUser(data.user);
         localStorageSet({
           keys: ["user", "role"],
@@ -84,7 +90,7 @@ const Login = () => {
       })
       .catch((err) => {
         console.error("Login error:", err);
-        showMessage("Server Error", "error");
+        showMsgRef.current("Server Error", "error");
       });
   };
 

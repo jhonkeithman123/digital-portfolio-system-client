@@ -6,20 +6,20 @@ import {
   Navigate,
 } from "react-router-dom";
 import { apiFetch } from "./utils/apiClient.js";
-import MessageContainer from "./components/MessageContainer.jsx";
+import MessageContainer from "./components/Component-elements/MessageContainer";
 import Home from "./pages/Home/Home";
 import Login from "./pages/Login/Login";
 import RoleSelect from "./pages/RoleSelect/RoleSelect";
 import Signup from "./pages/Signup/Signup";
 import ForgotPassword from "./pages/ForgotPassword/ForgotPassword";
-import Dashboard from "./pages/Dashboard/Dashboard.jsx";
-import NotFound from "./pages/NotFound/NotFound.jsx";
-import JoinClassroom from "./pages/classrooms/JoinClassroom.jsx";
-import CreateClassroom from "./pages/classrooms/CreateClassroom.jsx";
-import QuizCreate from "./pages/Home/section-pages/quiz/QuizCreate.jsx";
-import QuizEditPage from "./pages/Home/section-pages/quiz/quiz-edit.jsx";
-import QuizTakePage from "./pages/Home/section-pages/quiz/quiz-take.jsx";
-import QuizReviewPage from "./pages/Home/section-pages/quiz/quiz-review.jsx";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import NotFound from "./pages/NotFound/NotFound";
+import JoinClassroom from "./pages/classrooms/JoinClassroom";
+import CreateClassroom from "./pages/classrooms/CreateClassroom";
+import QuizCreate from "./components/Quiz-component/QuizCreate";
+import QuizEditPage from "./components/Quiz-component/quiz-edit";
+import QuizTakePage from "./components/Quiz-component/quiz-take";
+import QuizReviewPage from "./components/Quiz-component/quiz-review";
 
 const ProtectedRoute = ({ children, showMessage }) => {
   const [authorized, setAuthorized] = useState(null);

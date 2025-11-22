@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "../utils/apiClient.js";
+import { apiFetch } from "../../utils/apiClient.js";
 import "./css/NotificationMenu.css";
 
 const NotificationMenu = ({ setUnreadCount, onClose }) => {
